@@ -67,6 +67,9 @@ def dist(a,b):
     bx=b[0]; by=b[1]
     return np.sqrt((bx-ax)**2+(by-ay)**2)
 
+timet=[]
+vxt=[]
+vyt=[]
 for i in range(1,simuNpoints):
     # Nouvelle vitesse et nouveau point
     vit=newVit(vit,time)
@@ -78,6 +81,7 @@ for i in range(1,simuNpoints):
         trajecto[i]=trajecto[i-1]
     else:
         trajecto[i]=newPosition
+        vxt.append(vit[0]); vyt.append(vit[1]); timet.append(time)
     if dist(trajecto[i-1],trajecto[i])!=0:
         alpha=np.arccos((trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i]))
         # alphax=dist([trajecto[i-1][0],0],[trajecto[i][0],0])
@@ -97,7 +101,7 @@ print(trajecto)
 l=ceil(POUST[-1]/h) # Colorer la poussée en rouge
 
 # Tracé graphique de la trajectoire
-fig, (simplt)=plt.subplots(1)
+fig, ((simplt,pousplt),(vxplt,vyplt))=plt.subplots(2,2)
 fig.suptitle("Diagrammes")
 fig.tight_layout()
 
@@ -105,5 +109,15 @@ simplt.plot(x[:l],y[:l],"ro")
 simplt.plot(x[l:],y[l:],"go")
 simplt.axline([0,0],[1,0],c="r")
 simplt.set_title("Simulation")
+
+pousplt.plot(POUST,Poussee(POUST))
+pousplt.set_xlim(0,timeOfLaSimulation)
+pousplt.set_title("Courbe de la poussée")
+
+vxplt.plot(timet,vxt)
+vxplt.set_title("Vitesse en x")
+
+vyplt.plot(timet,vyt)
+vyplt.set_title("Vitesse en y")
 
 plt.show()
