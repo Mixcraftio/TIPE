@@ -14,7 +14,7 @@ simuNpoints=ceil(timeOfLaSimulation/h) # Nombres de points de simulation
 # simuNpoints=1000 # Nombres de points de simulation
 # h=timeOfLaSimulation/simuNpoints # Tranche de temps de la simulation (ti+1 - ti)
 # Initialisation des variables python
-trajecto=[[0,0] for i in range(simuNpoints)]
+trajecto=[[0,0,0] for i in range(simuNpoints)]
 time=0
 # -----------------------------------
 
@@ -24,12 +24,14 @@ POUSF=[0,492.25,1369.46,1236.01,1279.47,1311.39,1331.39,1304.08,1280.62,1249.86,
 Poussee=interp1d(POUST,POUSF)
 
 # Variables caractéristiques de la fusée
-vit=np.array([0,0]) # Vitesse initiale [(en m.s-1),(en m.s-1)]
+vit=np.array([0,0,0]) # Vitesse initiale [(en m.s-1),(en m.s-1)]
 m=7.8 # Masse totale de la fusée (en kg)
 Cx=0.85 # Coefficient de frottements ()
 S=0.008854 # Surface projetée du dessus (en m2)
 alpha=80 # Angle de lancer de la fusée (en deg)
+beta=45
 alpha=alpha*np.pi/180
+beta=beta*np.pi/180
 
 # Variables caractéristiques du milieu
 g=9.81 # Intensité du champs de pesanteur ()
@@ -45,57 +47,71 @@ def RK4_SingleStep(eq,h,ti,vi):
     return vf
 
 def newPos(pos,v):
-    x=pos[0]; y=pos[1]
-    vx=v[0]; vy=v[1]
+    x=pos[0]; y=pos[1]; z=pos[2]
+    vx=v[0]; vy=v[1]; vz=v[2]
     x+=vx*h
     y+=vy*h
-    return [x,y]
-
-def dist(a,b):
-    ax=a[0]; ay=a[1]
-    bx=b[0]; by=b[1]
-    return np.sqrt((bx-ax)**2+(by-ay)**2)
+    z+=vz*h
+    return [x,y,z]
 
 def equa(t,v):
     # Poussée
     if 0<=t<=POUST[-1]:
-        Pkx=Poussee(t)*np.cos(alpha)
         Pky=Poussee(t)*np.sin(alpha)
+        Ppxz=Poussee(t)*np.cos(alpha) # Projeté de la poussée sur xz
+        Pkx=Ppxz*np.cos(beta)
+        Pkz=Ppxz*np.sin(beta)
     else:
-        Pkx=0; Pky=0
+        Pkx=0; Pky=0; Pkz=0
     # Résistance de l'air
     Rx=-1/2*rho*S*Cx*(v[0]**2)
     Ry=-1/2*rho*S*Cx*(v[1]**2)
+    Rz=-1/2*rho*S*Cx*(v[2]**2)
     # Poids
     P=-m*g
     # Equations
     funx=1/m*(Pkx+Rx)
     funy=1/m*(Pky+Ry+P)
-    return np.array([funx,funy])
+    funz=1/m*(Pkz+Rz)
+    return np.array([funx,funy,funz])
+
+def dist(a,b,ref="xyz"):
+    ax=a[0]; ay=a[1]; az=a[2]
+    bx=b[0]; by=b[1]; bz=b[2]
+    if ref=="xz":
+        return np.sqrt((bx-ax)**2+(bz-az)**2)
+    return np.sqrt((bx-ax)**2+(by-ay)**2+(bz-az)**2)
 
 for i in range(1,simuNpoints):
     # Nouvelle vitesse et nouveau point
     vit=RK4_SingleStep(equa,h,time,vit)
     newPosition=newPos(trajecto[i-1],vit)
-    # if newPosition[1]<0: break
-    # trajecto[i]=newPosition
     if newPosition[1]<0:
-        vit=[0,0]
+        vit=[0,0,0]
         trajecto[i]=trajecto[i-1]
     else:
         trajecto[i]=newPosition
-    if dist(trajecto[i-1],trajecto[i])!=0:
-        alpha=np.arccos((trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i]))
-        # alphax=dist([trajecto[i-1][0],0],[trajecto[i][0],0])
-        # alphay=dist([0,trajecto[i-1][1]],[0,trajecto[i][1]])
+    
+    if dist(trajecto[i-1],trajecto[i],"xz")!=0:
+        # alpha
+        cosa=(dist(trajecto[i],trajecto[i-1],"xz"))/(dist(trajecto[i-1],trajecto[i]))
+        alpha=np.arccos(cosa)
+        # beta
+        cosb=(trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i],"xz")
+        if trajecto[i][2]>=0:
+            beta=np.arccos(cosb)
+        else:
+            beta=-np.arccos(cosb)
+    
     time+=h
 
 
 # Packing en listes 1d pour tracé
 x=[0 for i in range(simuNpoints)]
 y=[0 for i in range(simuNpoints)]
+z=[0 for i in range(simuNpoints)]
 for i in range(len(trajecto)):
-    x[i]=trajecto[i][0]; y[i]=trajecto[i][1]
+    x[i]=trajecto[i][0]; y[i]=trajecto[i][1]; z[i]=trajecto[i][2]
 
 # Affichage de variables intéressantes
 print("Altitude max: ", max(y), " m")
@@ -105,10 +121,15 @@ l=ceil(POUST[-1]/h) # Colorer la poussée en rouge
 # Tracé graphique de la trajectoire
 fig, (simplt)=plt.subplots(1)
 fig.suptitle("Diagrammes")
+fig.tight_layout()
 
-simplt.plot(x[:l],y[:l],"ro")
-simplt.plot(x[l:],y[l:],"go")
-simplt.axline([0,0],[1,0],c="r")
+simplt=plt.axes(projection='3d')
+# simplt.view_init(30, 45)
+simplt.plot3D(z[:l],x[:l],y[:l],"r")
+simplt.plot3D(z[l:],x[l:],y[l:],"g")
+simplt.set_xlabel('z')
+simplt.set_ylabel('x')
+simplt.set_zlabel('y')
 simplt.set_title("Simulation")
 
 plt.show()
