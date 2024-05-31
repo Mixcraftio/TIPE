@@ -14,7 +14,7 @@ simuNpoints=ceil(timeOfLaSimulation/h) # Nombres de points de simulation
 # simuNpoints=1000 # Nombres de points de simulation
 # h=timeOfLaSimulation/simuNpoints # Tranche de temps de la simulation (ti+1 - ti)
 # Initialisation des variables python
-trajecto=[[0,0,0] for i in range(simuNpoints)]
+trajecto=np.array([np.array([0.0,0.0,0.0]) for i in range(simuNpoints)])
 time=0
 # -----------------------------------
 
@@ -46,58 +46,54 @@ def RK4_SingleStep(eq,h,ti,vi):
     vf=vi+(f1+2*f2+2*f3+f4)*(h/6)
     return vf
 
-def newPos(pos,v):
-    x=pos[0]; y=pos[1]; z=pos[2]
-    vx=v[0]; vy=v[1]; vz=v[2]
-    x+=vx*h
-    y+=vy*h
-    z+=vz*h
-    return [x,y,z]
+def Euler_SingleStep(vi,h,xi):
+    xf=xi+vi*h
+    return xf
 
 def equa(t,v):
     # Poussée
     if 0<=t<=POUST[-1]:
-        Pky=Poussee(t)*np.sin(alpha)
-        Ppxz=Poussee(t)*np.cos(alpha) # Projeté de la poussée sur xz
-        Pkx=Ppxz*np.cos(beta)
-        Pkz=Ppxz*np.sin(beta)
+        Pkz=Poussee(t)*np.sin(alpha)
+        Ppxy=Poussee(t)*np.cos(alpha) # Projeté de la poussée sur xy
+        Pky=Ppxy*np.cos(beta)
+        Pkx=Ppxy*np.sin(beta)
     else:
         Pkx=0; Pky=0; Pkz=0
+    Pk=np.array([Pkx,Pky,Pkz])
     # Résistance de l'air
-    Rx=-1/2*rho*S*Cx*(v[0]**2)
-    Ry=-1/2*rho*S*Cx*(v[1]**2)
-    Rz=-1/2*rho*S*Cx*(v[2]**2)
+    R=-1/2*rho*S*Cx*(np.square(v))
     # Poids
-    P=-m*g
-    # Equations
-    funx=1/m*(Pkx+Rx)
-    funy=1/m*(Pky+Ry+P)
-    funz=1/m*(Pkz+Rz)
-    return np.array([funx,funy,funz])
+    P=np.array([0,0,-m*g])
+
+    # Résultante
+    forces = Pk + R + P
+    accel= 1/m*forces
+    return accel
 
 def dist(a,b,ref="xyz"):
     ax=a[0]; ay=a[1]; az=a[2]
     bx=b[0]; by=b[1]; bz=b[2]
-    if ref=="xz":
-        return np.sqrt((bx-ax)**2+(bz-az)**2)
+    if ref=="xy":
+        return np.sqrt((bx-ax)**2+(by-ay)**2)
     return np.sqrt((bx-ax)**2+(by-ay)**2+(bz-az)**2)
 
 for i in range(1,simuNpoints):
     # Nouvelle vitesse et nouveau point
     vit=RK4_SingleStep(equa,h,time,vit)
-    newPosition=newPos(trajecto[i-1],vit)
-    if newPosition[1]<0:
+    newPosition=Euler_SingleStep(vit,h,trajecto[i-1])
+    if newPosition[2]<0:
         vit=[0,0,0]
         trajecto[i]=trajecto[i-1]
     else:
         trajecto[i]=newPosition
     
-    if dist(trajecto[i-1],trajecto[i],"xz")!=0:
+    # Calcul de rotation
+    if dist(trajecto[i-1],trajecto[i],"xy")!=0:
         # alpha
-        cosa=(dist(trajecto[i],trajecto[i-1],"xz"))/(dist(trajecto[i-1],trajecto[i]))
+        cosa=(dist(trajecto[i],trajecto[i-1],"xy"))/(dist(trajecto[i-1],trajecto[i]))
         alpha=np.arccos(cosa)
         # beta
-        cosb=(trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i],"xz")
+        cosb=(trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i],"xy")
         if trajecto[i][2]>=0:
             beta=np.arccos(cosb)
         else:
@@ -107,14 +103,12 @@ for i in range(1,simuNpoints):
 
 
 # Packing en listes 1d pour tracé
-x=[0 for i in range(simuNpoints)]
-y=[0 for i in range(simuNpoints)]
-z=[0 for i in range(simuNpoints)]
-for i in range(len(trajecto)):
-    x[i]=trajecto[i][0]; y[i]=trajecto[i][1]; z[i]=trajecto[i][2]
+x=[trajecto[i,0] for i in range(simuNpoints)]
+y=[trajecto[i,1] for i in range(simuNpoints)]
+z=[trajecto[i,2] for i in range(simuNpoints)]
 
 # Affichage de variables intéressantes
-print("Altitude max: ", max(y), " m")
+print("Altitude max: ", max(z), " m")
 print(trajecto)
 l=ceil(POUST[-1]/h) # Colorer la poussée en rouge
 
@@ -125,11 +119,22 @@ fig.tight_layout()
 
 simplt=plt.axes(projection='3d')
 # simplt.view_init(30, 45)
-simplt.plot3D(z[:l],x[:l],y[:l],"r")
-simplt.plot3D(z[l:],x[l:],y[l:],"g")
-simplt.set_xlabel('z')
-simplt.set_ylabel('x')
-simplt.set_zlabel('y')
+simplt.plot3D(x[:l],y[:l],z[:l],"r")
+simplt.plot3D(x[l:],y[l:],z[l:],"g")
+simplt.set_xlabel('x')
+simplt.set_ylabel('y')
+simplt.set_zlabel('z')
 simplt.set_title("Simulation")
 
 plt.show()
+
+t2=""
+for r in trajecto:
+    for i in r[:-1]:
+        t2+=str(i)+";"
+    t2+=str(i)+"\n"
+# print(t2)
+
+f = open("SIM.txt", "a")
+f.write(t2)
+f.close()
