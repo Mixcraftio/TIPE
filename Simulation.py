@@ -4,68 +4,100 @@ from scipy.interpolate import interp1d
 from math import ceil
 
 
-LeNumberOfPoints=1000 #int
-LeTimeOfLaSimulation=100 #s
-LeTrancheOfTime=LeTimeOfLaSimulation/LeNumberOfPoints
-LeTrajectoir=[[0,0] for i in range(LeNumberOfPoints)]
-LeVitesse=[0,0]
-LeTime=0
+# ----- Variables de simulation -----
+# Choix temps
+timeOfLaSimulation=30 # Temps de simulation (en s)
+h=0.01 # Tranche de temps de la simulation (ti+1 - ti) (en s)
+simuNpoints=ceil(timeOfLaSimulation/h) # Nombres de points de simulation
+# Choix points
+# timeOfLaSimulation=100 # Temps de simulation (en s)
+# simuNpoints=1000 # Nombres de points de simulation
+# h=timeOfLaSimulation/simuNpoints # Tranche de temps de la simulation (ti+1 - ti)
+# Initialisation des variables python
+trajecto=[[0,0] for i in range(simuNpoints)]
+time=0
+# -----------------------------------
 
+# Courbe de poussée du propulseur (en N)
 POUST=[0,0.01,0.02,0.05,0.1,0.2,0.4,0.8,0.9,1,1.1,1.2,1.3,1.4,1.55,1.6,1.62,1.64,1.66,1.67,1.68,1.69,1.7]
 POUSF=[0,492.25,1369.46,1236.01,1279.47,1311.39,1331.39,1304.08,1280.62,1249.86,1217.94,1199.29,1158.77,1112.56,941.81,726.07,559.17,399.95,317.66,247.28,198.05,67.3,0]
-CurveOfLaPoussee=interp1d(POUST,POUSF)
+Poussee=interp1d(POUST,POUSF)
 
-def LeNouvelAccelerat(v,t):
+# Variables caractéristiques de la fusée
+vit=[0,0] # Vitesse initiale [(en m.s-1),(en m.s-1)]
+m=7.8 # Masse totale de la fusée (en kg)
+Cx=0.85 # Coefficient de frottements ()
+S=0.008854 # Surface projetée du dessus (en m2)
+alpha=80 # Angle de lancer de la fusée (en deg)
+alpha=alpha*np.pi/180
+
+# Variables caractéristiques du milieu
+g=9.81 # Intensité du champs de pesanteur ()
+rho=1.293 # Masse volumique de l'air (en kg/m3)
+
+
+def newVit(v,t):
     vx=v[0]; vy=v[1]
-    m=7.8
-    g=9.81
-    POIDS=[0,-m*g]
-    Cx=0.85
-    rho=1.293
-    S=0.008854
-    RESIST=[-(1/2)*rho*Cx*(vx**2)*S,-(1/2)*rho*Cx*(vy**2)*S]
+    # va=np.sqrt(vx**2+vy**2)
+    # Poussée
     if 0<=t<=POUST[-1]:
-        POUSSEE=[1,CurveOfLaPoussee(t)]
+        Pkx=Poussee(t)*np.cos(alpha)
+        Pky=Poussee(t)*np.sin(alpha)
     else:
-        POUSSEE=[0,0]
-    return ((POIDS[0]+RESIST[0]+POUSSEE[0])/m,(POIDS[1]+RESIST[1]+POUSSEE[1])/m)
+        Pkx=0; Pky=0
+    # Résistance de l'air
+    Rx=-1/2*rho*S*Cx*(vx**2)
+    Ry=-1/2*rho*S*Cx*(vy**2)
+    # Poids
+    P=-m*g
+    # Nouvelle vitesse
+    vx+=1/m*(Pkx+Rx)*h
+    vy+=1/m*(Pky+Ry+P)*h
+    return [vx,vy]
 
-def LeNouvelVitesse(v,F):
-    vx=v[0]; vy=v[1]
-    Fx=F[0]; Fy=F[1]
-    return [vx+(Fx*LeTrancheOfTime),vy+(Fy*LeTrancheOfTime)]
-
-def LeNouvelPosition(pos,v):
+def newPos(pos,v):
     x=pos[0]; y=pos[1]
     vx=v[0]; vy=v[1]
-    return [x+(vx*LeTrancheOfTime),y+(vy*LeTrancheOfTime)]
+    x+=vx*h
+    y+=vy*h
+    return [x,y]
 
-for i in range(1,LeNumberOfPoints):
-    # print(LeResultanteDesForces)
-    LeAccelerat=LeNouvelAccelerat(LeVitesse,LeTime)
-    # print(LeVitesse)
-    LeVitesse=LeNouvelVitesse(LeVitesse,LeAccelerat)
-    # print(LeTrajectoir[i])
-    NouvelPoint=LeNouvelPosition(LeTrajectoir[i-1],LeVitesse)
-    if NouvelPoint[1]<=0:
-        LeVitesse=[0,0]
-        LeAccelerat=[0,0]
-        LeTrajectoir[i]=LeTrajectoir[i-1]
+def dist(a,b):
+    ax=a[0]; ay=a[1]
+    bx=b[0]; by=b[1]
+    return np.sqrt((bx-ax)**2+(by-ay)**2)
+
+for i in range(1,simuNpoints):
+    # Nouvelle vitesse et nouveau point
+    vit=newVit(vit,time)
+    newPosition=newPos(trajecto[i-1],vit)
+    # if newPosition[1]<0: break
+    # trajecto[i]=newPosition
+    if newPosition[1]<0:
+        vit=[0,0]
+        trajecto[i]=trajecto[i-1]
     else:
-        LeTrajectoir[i]=NouvelPoint
-    LeTime+=LeTrancheOfTime
+        trajecto[i]=newPosition
+    if dist(trajecto[i-1],trajecto[i])!=0:
+        alpha=np.arccos((trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i]))
+        # alphax=dist([trajecto[i-1][0],0],[trajecto[i][0],0])
+        # alphay=dist([0,trajecto[i-1][1]],[0,trajecto[i][1]])
+    time+=h
 
-x=[0 for i in range(LeNumberOfPoints)]
-y=[0 for i in range(LeNumberOfPoints)]
-for i in range(len(LeTrajectoir)):
-    x[i]=LeTrajectoir[i][0]; y[i]=LeTrajectoir[i][1]
 
+# Packing en listes 1d pour tracé
+x=[0 for i in range(simuNpoints)]
+y=[0 for i in range(simuNpoints)]
+for i in range(len(trajecto)):
+    x[i]=trajecto[i][0]; y[i]=trajecto[i][1]
 
+# Affichage de variables intéressantes
 print("Altitude max: ", max(y), " m")
-print(LeTrajectoir)
-l=ceil(POUST[-1]/LeTrancheOfTime)
+print(trajecto)
+l=ceil(POUST[-1]/h) # Colorer la poussée en rouge
 
-fig, (simplt,thrstplt)=plt.subplots(2)
+# Tracé graphique de la trajectoire
+fig, (simplt)=plt.subplots(1)
 fig.suptitle("Diagrammes")
 fig.tight_layout()
 
@@ -73,8 +105,5 @@ simplt.plot(x[:l],y[:l],"ro")
 simplt.plot(x[l:],y[l:],"go")
 simplt.axline([0,0],[1,0],c="r")
 simplt.set_title("Simulation")
-
-thrstplt.plot(POUST,CurveOfLaPoussee(POUST))
-thrstplt.set_title("Courbe de la poussée")
 
 plt.show()
