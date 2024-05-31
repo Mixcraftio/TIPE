@@ -24,7 +24,7 @@ POUSF=[0,492.25,1369.46,1236.01,1279.47,1311.39,1331.39,1304.08,1280.62,1249.86,
 Poussee=interp1d(POUST,POUSF)
 
 # Variables caractéristiques de la fusée
-vit=[0,0] # Vitesse initiale [(en m.s-1),(en m.s-1)]
+vit=np.array([0,0]) # Vitesse initiale [(en m.s-1),(en m.s-1)]
 m=7.8 # Masse totale de la fusée (en kg)
 Cx=0.85 # Coefficient de frottements ()
 S=0.008854 # Surface projetée du dessus (en m2)
@@ -36,24 +36,13 @@ g=9.81 # Intensité du champs de pesanteur ()
 rho=1.293 # Masse volumique de l'air (en kg/m3)
 
 
-def newVit(v,t):
-    vx=v[0]; vy=v[1]
-    # va=np.sqrt(vx**2+vy**2)
-    # Poussée
-    if 0<=t<=POUST[-1]:
-        Pkx=Poussee(t)*np.cos(alpha)
-        Pky=Poussee(t)*np.sin(alpha)
-    else:
-        Pkx=0; Pky=0
-    # Résistance de l'air
-    Rx=-1/2*rho*S*Cx*(vx**2)
-    Ry=-1/2*rho*S*Cx*(vy**2)
-    # Poids
-    P=-m*g
-    # Nouvelle vitesse
-    vx+=1/m*(Pkx+Rx)*h
-    vy+=1/m*(Pky+Ry+P)*h
-    return [vx,vy]
+def RK4_SingleStep(eq,h,ti,vi):
+    f1=eq(ti,vi)
+    f2=eq(ti+h/2,vi+f1*h/2)
+    f3=eq(ti+h/2,vi+f2*h/2)
+    f4=eq(ti+h,vi+f3*h)
+    vf=vi+(f1+2*f2+2*f3+f4)*(h/6)
+    return vf
 
 def newPos(pos,v):
     x=pos[0]; y=pos[1]
@@ -67,12 +56,26 @@ def dist(a,b):
     bx=b[0]; by=b[1]
     return np.sqrt((bx-ax)**2+(by-ay)**2)
 
-timet=[]
-vxt=[]
-vyt=[]
+def equa(t,v):
+    # Poussée
+    if 0<=t<=POUST[-1]:
+        Pkx=Poussee(t)*np.cos(alpha)
+        Pky=Poussee(t)*np.sin(alpha)
+    else:
+        Pkx=0; Pky=0
+    # Résistance de l'air
+    Rx=-1/2*rho*S*Cx*(v[0]**2)
+    Ry=-1/2*rho*S*Cx*(v[1]**2)
+    # Poids
+    P=-m*g
+    # Equations
+    funx=1/m*(Pkx+Rx)
+    funy=1/m*(Pky+Ry+P)
+    return np.array([funx,funy])
+
 for i in range(1,simuNpoints):
     # Nouvelle vitesse et nouveau point
-    vit=newVit(vit,time)
+    vit=RK4_SingleStep(equa,h,time,vit)
     newPosition=newPos(trajecto[i-1],vit)
     # if newPosition[1]<0: break
     # trajecto[i]=newPosition
@@ -81,7 +84,6 @@ for i in range(1,simuNpoints):
         trajecto[i]=trajecto[i-1]
     else:
         trajecto[i]=newPosition
-        vxt.append(vit[0]); vyt.append(vit[1]); timet.append(time)
     if dist(trajecto[i-1],trajecto[i])!=0:
         alpha=np.arccos((trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i]))
         # alphax=dist([trajecto[i-1][0],0],[trajecto[i][0],0])
@@ -101,23 +103,12 @@ print(trajecto)
 l=ceil(POUST[-1]/h) # Colorer la poussée en rouge
 
 # Tracé graphique de la trajectoire
-fig, ((simplt,pousplt),(vxplt,vyplt))=plt.subplots(2,2)
+fig, (simplt)=plt.subplots(1)
 fig.suptitle("Diagrammes")
-fig.tight_layout()
 
 simplt.plot(x[:l],y[:l],"ro")
 simplt.plot(x[l:],y[l:],"go")
 simplt.axline([0,0],[1,0],c="r")
 simplt.set_title("Simulation")
-
-pousplt.plot(POUST,Poussee(POUST))
-pousplt.set_xlim(0,timeOfLaSimulation)
-pousplt.set_title("Courbe de la poussée")
-
-vxplt.plot(timet,vxt)
-vxplt.set_title("Vitesse en x")
-
-vyplt.plot(timet,vyt)
-vyplt.set_title("Vitesse en y")
 
 plt.show()
