@@ -6,36 +6,49 @@ from math import ceil
 
 
 # ----- Variables de simulation -----
+# Discretisation temporelle
+# Choix points
+# simulationDuration=30 # Temps de simulation (en s)
+# simuNPoints=2500 # Nombres de points de simulation
+# h=simulationDuration/simuNPoints # Tranche de temps de la simulation (ti+1 - ti)
 # Choix temps
 # simulationDuration=30 # Temps de simulation (en s)
 # h=0.01 # Tranche de temps de la simulation (ti+1 - ti) (en s)
-# simuNPoints=ceil(simulationDuration/h) # Nombres de points de simulation
-# Choix points
+# simuNPoints=ceil(simulationDuration/h) # Nombres de points de simulation*
+# Blender
+fps=60 # Frame rate de l'animation
 simulationDuration=30 # Temps de simulation (en s)
-simuNPoints=3000 # Nombres de points de simulation
-h=simulationDuration/simuNPoints # Tranche de temps de la simulation (ti+1 - ti)
+h=1/fps # Tranche de temps de la simulation (ti+1 - ti) (en s)
+simuNPoints=ceil(simulationDuration/h) # Nombres de points de simulation
 
-# Initialisation des variables python
-trajecto=np.array([np.array([0.0,0.0,0.0]) for i in range(simuNPoints)])
-q=np.array([np.quaternion(0,0,0,0) for i in range(simuNPoints)])
-time=0
 
 # Variables caractéristiques du milieu
 g=9.81 # Intensité du champs de pesanteur ()
 rho=1.225 # Masse volumique de l'air (en kg/m3)
 
 # Variables caractéristiques de la fusée
-speed=np.array([0,0,0]) # Vitesse initiale [(en m.s-1),(en m.s-1),(en m.s-1)]
-m=7.8 # Masse totale de la fusée (en kg)
-Cx=0.85 # Coefficient de frottements ()
-S=0.008854 # Surface projetée du dessus (en m2)
-theta=45 # Angle de lancer de la fusée (en deg)
+# Karlavagnen
+# m=9.415 # Masse totale de la fusée (en kg)
+# Cx=0.85 # Coefficient de frottements ()
+# S=0.008854 # Surface projetée du dessus (en m2)
+# Hellfire
+m=9.032 # Masse totale de la fusée (en kg)
+Cx=0.7 # Coefficient de frottements ()
+S=0.008878 # Surface projetée du dessus (en m2)
+
+# Variables caractéristiques du lancement
+speed=np.array([0.0,0.0,0.0]) # Vitesse initiale [(en m.s-1),(en m.s-1),(en m.s-1)]
+azimuth=45 # Angle de lancer de la fusée (en deg)
 elevation=80 # Angle d'élévation de la rampe (en deg)
-phi=90-elevation
-theta=theta*np.pi/180
-phi=phi*np.pi/180
-q[0]=quat.from_euler_angles(np.array([theta,phi,0]))
-wi=np.array([0.0,0.0,0.0])
+
+
+# Initialisation des variables python
+time=0
+trajecto=np.zeros((simuNPoints,3), dtype=np.float64)
+e=np.zeros((simuNPoints,3), dtype=np.float64)
+theta=azimuth*np.pi/180
+phi=(90-elevation)*np.pi/180
+e[0]=np.array([theta,phi,0])
 
 # Courbe de poussée du propulseur (en N)
 thrustTime=[0,0.01,0.02,0.05,0.1,0.2,0.4,0.8,0.9,1,1.1,1.2,1.3,1.4,1.55,1.6,1.62,1.64,1.66,1.67,1.68,1.69,1.7]
@@ -59,7 +72,7 @@ def Euler_SingleStep(vi,xi,h):
 def acceleration(t,v):
     # Poussée
     if 0<=t<=thrustTime[-1]:
-        euler_angles=quat.as_euler_angles(q[i-1])
+        euler_angles=e[i-1]
         theta=euler_angles[0]; phi=euler_angles[1]
         Pkz=Thrust(t)*np.cos(phi)
         Ppxy=Thrust(t)*np.sin(phi)
@@ -85,18 +98,18 @@ def dist(a,b,ref="xyz"):
         return np.sqrt((bx-ax)**2+(by-ay)**2)
     return np.sqrt((bx-ax)**2+(by-ay)**2+(bz-az)**2)
 
-def selfAcceleration(t,v):
-    accel=np.array([0.0,0.0,0.0])
-    return accel
-
-def updateRotation2(eq,qi,wi,h):
-    w=RK4_SingleStep(eq,wi,0,h)
-    wx=w[0]; wy=w[1]; wz=w[2]
-    OMEGA=np.array([[0,-wx,-wy,-wz],[wx,0,wz,-wy],[wy,-wz,0,wx],[wz,wy,-wx,0]])
-    qi=quat.as_float_array(qi)
-    qDot=1/2*np.matmul(OMEGA,qi)
-    q=Euler_SingleStep(qDot,qi,h)
-    return q,w
+def updateRotation(theta, phi):
+    if dist(trajecto[i-1],trajecto[i],"xy")!=0:
+        # theta
+        costheta=(trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i],"xy")
+        if trajecto[i][2]>=0:
+            theta=np.arccos(costheta)
+        else:
+            theta=-np.arccos(costheta)
+        # phi
+        cosphi=(trajecto[i][2]-trajecto[i-1][2])/(dist(trajecto[i-1],trajecto[i]))
+        phi=np.arccos(cosphi)
+    return np.array([theta,phi,0])
 
 for i in range(1,simuNPoints):
     # LOOP principal
@@ -104,37 +117,22 @@ for i in range(1,simuNPoints):
     position=Euler_SingleStep(speed,trajecto[i-1],h)
     if position[2]<0:
         speed=np.array([0,0,0])
-        trajecto[i]=trajecto[i-1]
+        trajecto[i]=np.array([trajecto[i-1][0],trajecto[i-1][1],0])
     else:
         trajecto[i]=position
-    # Calcul de rotation
-    # if dist(trajecto[i-1],trajecto[i],"xy")!=0:
-    #     # theta
-    #     costheta=(trajecto[i][0]-trajecto[i-1][0])/dist(trajecto[i-1],trajecto[i],"xy")
-    #     if trajecto[i][2]>=0:
-    #         theta=np.arccos(costheta)
-    #     else:
-    #         theta=-np.arccos(costheta)
-    #     # phi
-    #     # cosphi=(dist(trajecto[i],trajecto[i-1],"xy"))/(dist(trajecto[i-1],trajecto[i]))
-    #     cosphi=(trajecto[i][2]-trajecto[i-1][2])/(dist(trajecto[i-1],trajecto[i]))
-    #     phi=np.arccos(cosphi)
-    # q[i]=quat.from_euler_angles(np.array([theta,phi,0]))
-    # Calcul de rotation 2
-    q[i],wi=updateRotation2(selfAcceleration,q[i-1],wi,h)
+        # Calcul de rotation
+        e[i]=updateRotation(theta, phi)
+    # Nouveau pas
     time+=h
 
 
 # Packing en listes 1d pour tracé
-x=np.array([trajecto[i,0] for i in range(simuNPoints)])
-y=np.array([trajecto[i,1] for i in range(simuNPoints)])
-z=np.array([trajecto[i,2] for i in range(simuNPoints)])
+x,y,z=trajecto.T # Transposée car unpacking selon les colonnes
 v=np.array([(np.linalg.norm(trajecto[i])-np.linalg.norm(trajecto[i-1]))/h for i in range(1,len(trajecto))])
 
 # Affichage de variables intéressantes
 print("Altitude max: ", max(z), " m")
 print("Vitesse max: ", max(v), " m.s^-2")
-# print(trajecto)
 
 # Tracé graphique de la trajectoire
 thrustEnd=ceil(thrustTime[-1]/h) # Colorer la poussée en rouge
@@ -151,16 +149,16 @@ plt.show()
 
 # Export des données
 export=""
-export+=str(simulationDuration)+"\n"
-q2=[quat.as_float_array(i) for i in q]
+export+=str(simulationDuration)+";"+str(h)+";"+str(thrustTime[-1])+"\n"
+e2=[np.array([i[2],i[1],i[0]]) for i in e]
 for r in range(simuNPoints):
     for i in trajecto[r]:
         export+=str(i)+";"
-    for i in q2[r][:-1]:
+    for i in e2[r][:-1]:
         export+=str(i)+";"
-    export+=str(q2[r][-1])+"\n"
+    export+=str(e2[r][-1])+"\n"
 
-f = open("SIM.txt", "w")
+f = open("SIM-EULER.txt", "w")
 f.write(export)
 f.close()
 print("Saved")
