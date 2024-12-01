@@ -43,19 +43,21 @@ plt.show()
 
 
 vit=[(calib[i+1] - calib[i])/(tzm[i+1] - tzm[i])*1e3 for i in range(len(calib)-1)]
+
 montee=t_brut[3500:3542]-decollageTensio;calib_montee=altitude(bmp_brut[3500:3542])
 vit_montee=[(calib_montee[i+1] - calib_montee[i])/(montee[i+1] - montee[i])*1e3 for i in range(len(calib_montee)-1)]
+
 descente=t_brut[3538:3720]-decollageTensio;calib_descente=altitude(bmp_brut[3538:3720])
-vit_descente=[(calib_descente[i+1] - calib_descente[i])/(descente[i+1] - descente[i])*1e3 for i in range(len(calib_descente)-1)]
-reg=np.polyfit(descente[:-1], vit_descente,1)
-print("\nVitesse moyenne de descente: " + str(np.mean(reg[0]*descente[:-1]+reg[1])) + " m.s-1")
+vit_descente=[(calib_descente[i] - calib_descente[i-1])/(descente[i] - descente[i-1])*1e3 for i in range(1,len(calib_descente))]
+
+print("\nVitesse moyenne de descente: " + str(np.mean(vit_descente))+ " m.s-1")
 
 fig3,vites=plt.subplots()
 vites.set_title("Vitesse z calculée des données du BMP180")
 vites.set_xlabel("Temps (ms)")
 vites.set_ylabel("Vitesse (m.s-1)")
-vites.plot(tzm[:-1],vit, label="Vitesse z calculée des mesures")
-vites.plot(descente[:-1], reg[0]*descente[:-1]+reg[1], label="Regression de la vitesse de descente")
+vites.plot(tzm[:-1],vit, label="Vitesse z calculée")
+vites.hlines(np.mean(vit_descente), xmin=descente[0], xmax=descente[-1], color="tab:orange", label="Moyenne de la vitesse z de descente")
 vites.set_ylim((-50,200))
 vites.grid()
 
