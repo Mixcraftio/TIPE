@@ -8,6 +8,7 @@ fig.suptitle("Trajectory Simulation")
 ax = fig.add_subplot(projection='3d')
 
 for Cx in [0.6,0.65,0.7,0.75,0.8]:
+# for Cx in [0.6]:
     # Define and create rocket
     # Hellfire
     rocket = Rocket(rocket_mass=7.900,
@@ -19,6 +20,11 @@ for Cx in [0.6,0.65,0.7,0.75,0.8]:
     #                 projected_surface=0.008854,
     #                 motor_name="Pro54-5G C",
     #                 drag_coefficient=0.85)
+    # Mistral
+    # rocket = Rocket(rocket_mass=1.5,
+    #                 projected_surface=0.003167,
+    #                 motor_name="Pro24-6G BS",
+    #                 drag_coefficient=0.6)
 
     # Create simulation
     sim = SimulationEuler(rocket, simulation_duration=30)
@@ -32,7 +38,7 @@ for Cx in [0.6,0.65,0.7,0.75,0.8]:
 
     # Altitude maximale
     apogee=max(sim.trajectory[:,2])
-    print(apogee)
+    print("Apogée :", apogee)
     # Vitesse moyenne de montée
     # v=np.array([(np.linalg.norm(sim.trajectory[i])-np.linalg.norm(sim.trajectory[i-1]))/sim.h for i in range(1,len(sim.trajectory)//2)])
     # print(v.mean())
