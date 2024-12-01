@@ -47,15 +47,19 @@ class SimulationEuler:
 
         # Résistance de l'air
         resistance = -0.5 * rho * self.rocket.S * self.rocket.Cx * np.square(velocity)
+        if t >= self.rocket.t_open_para:
+            resistancePara = 0.5 * rho * self.rocket.Sp * self.rocket.Cp * np.array([0,0,velocity[2]**2])
+        else:
+            resistancePara = 0
 
         # Poids
-        weight = np.array([0, 0, -self.rocket.m * g])
-        # weight = np.array([0, 0, -self.rocket.Mass(t) * g])
+        # weight = np.array([0, 0, -self.rocket.m * g])
+        weight = np.array([0, 0, -self.rocket.Mass(t) * g])
 
         # Force
-        forces = thrust + resistance + weight
-        accel = forces / self.rocket.m
-        # accel = forces / self.rocket.Mass(t)
+        forces = thrust + resistance + resistancePara + weight
+        # accel = forces / self.rocket.m
+        accel = forces / self.rocket.Mass(t)
         return accel
 
     def updateRotation(self, i, theta, phi):
@@ -198,19 +202,15 @@ class SimulationQuaternion:
             self.time += self.h
         return self.trajectory, self.q
     
-    def plot_trajectory(self):
+    def plot_trajectory(self,ax):
         x, y, z = self.trajectory.T
         thrust_end = ceil(self.rocket.thrust_time[-1] / self.h)
 
-        fig = plt.figure()
-        fig.suptitle("Trajectory Simulation")
-        ax = fig.add_subplot(projection='3d')
         ax.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r')
         ax.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g')
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
-        plt.show()
 
     def export_data(self, filename="SIM-QUAT.txt"):
         export = ""
