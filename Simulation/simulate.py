@@ -16,6 +16,7 @@ for Cx in [0.7]:
                     open_para=16,
                     rocket_projected_surface=0.008854,
                     para_projected_surface=1.99,
+                    # para_projected_surface=1.99/2,
                     rocket_drag_coefficient=Cx)
     # Karlavagnen
     # rocket = Rocket(rocket_mass=7.730,
@@ -25,33 +26,33 @@ for Cx in [0.7]:
     #                 para_projected_surface=1.99,
     #                 rocket_drag_coefficient=0.85)
     # Mistral
-    # rocket = Rocket(rocket_mass=1.500,
-    #                 motor_name="Pro24-6G BS",
-    #                 open_para=8,
-    #                 rocket_projected_surface=0.003167,
-    #                 para_projected_surface=0.44,
-    #                 rocket_drag_coefficient=0.6)
+    rocket = Rocket(rocket_mass=1.500,
+                    motor_name="Pro24-6G BS",
+                    open_para=8,
+                    rocket_projected_surface=0.003167,
+                    para_projected_surface=0.44,
+                    rocket_drag_coefficient=0.6)
 
-    # Create simulation
+    # Creation de l'objet simulation
     sim = SimulationEuler(rocket, simulation_duration=200)
     # sim = SimulationQuaternion(rocket, simulation_duration=30)
 
-    # Run the simulation
+    # Execution de la simulation
     sim.run_simulation()
 
     sim.plot_trajectory(ax)
     plt.show()
     sim.export_data()
 
+
+    # ---------- Calculs ----------
     # Altitude maximale
     apogee=max(sim.trajectory[:,2])
     print("Apogée :", apogee)
     # Vitesse moyenne de montée
-    # v=np.array([(np.linalg.norm(sim.trajectory[i])-np.linalg.norm(sim.trajectory[i-1]))/sim.h for i in range(1,len(sim.trajectory)//2)])
-    # print(v.mean())
+    print("Vitesse de montée moyenne :", sim.velocity[:np.argmax([np.linalg.norm(e) for e in sim.velocity])].mean())
     # Vitesse
     # v=np.array([(np.linalg.norm(sim.trajectory[i])-np.linalg.norm(sim.trajectory[i-1]))/sim.h for i in range(1,len(sim.trajectory))])
     # Vitesse z
-    # vz=np.array([(sim.trajectory[i][2]-sim.trajectory[i-1][2])/sim.h for i in range(1,len(sim.trajectory))])
-    # plt.plot(range(len(vz)),vz)
+    # plt.plot(range(len(sim.velocity)),sim.velocity)
     # plt.show()
