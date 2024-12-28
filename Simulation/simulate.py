@@ -9,7 +9,7 @@ ax = fig.add_subplot(projection='3d')
 
 # for Cx in [0.6,0.65,0.7,0.75,0.8]:
 for Cx in [0.7]:
-    # Define and create rocket
+    # Definition et creation de rocket
     # Hellfire
     rocket = Rocket(rocket_mass=7.400,
                     motor_name="Pro54-5G WT",
@@ -26,12 +26,12 @@ for Cx in [0.7]:
     #                 para_projected_surface=1.99,
     #                 rocket_drag_coefficient=0.85)
     # Mistral
-    rocket = Rocket(rocket_mass=1.500,
-                    motor_name="Pro24-6G BS",
-                    open_para=8,
-                    rocket_projected_surface=0.003167,
-                    para_projected_surface=0.44,
-                    rocket_drag_coefficient=0.6)
+    # rocket = Rocket(rocket_mass=1.500,
+    #                 motor_name="Pro24-6G BS",
+    #                 open_para=8,
+    #                 rocket_projected_surface=0.003167,
+    #                 para_projected_surface=0.44,
+    #                 rocket_drag_coefficient=0.6)
 
     # Creation de l'objet simulation
     sim = SimulationEuler(rocket, simulation_duration=200)
