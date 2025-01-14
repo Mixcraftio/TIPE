@@ -6,6 +6,7 @@ g=9.81; Cp=1006; T0=30+273.15; R=8.314; M=29e-3
 altitude = lambda p: -((R*T0)/(M*g))*np.log(p/p0)
 # altitude = lambda p: 3146-(p/10)
 
+
 #------------------- Data Import -------------------
 # Hellfire
 # df = pd.read_csv("../DATA/TENSIO.TXT", sep=";", usecols=[0, 2], engine="python")
@@ -55,7 +56,7 @@ altitude_plot.plot(tzm,calib, label="Altitude mesurée")
 altitude_plot.grid()
 t=np.linspace(0,200000,len(tx))
 altitude_plot.plot(t,tz,color="tab:red",label="Altitude z de simulation")
-plt.legend()
+altitude_plot.legend()
 fig2.savefig("./OUT/Altitude.svg")
 plt.show()
 
@@ -82,5 +83,5 @@ vz=np.array([(tz[i]-tz[i-1])/0.016666666666666666 for i in range(1,len(tx))])
 t=np.linspace(0,200000,len(tx)-1)
 plt.plot(t,vz,color="tab:red",label="Vitesse z de simulation")
 plt.legend()
-fig3.savefig("./OUT/Vitesse.svg")
+fig3.savefig("./OUT/OUT/Vitesse.svg")
 plt.show()

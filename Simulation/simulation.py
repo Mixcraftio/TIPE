@@ -2,7 +2,7 @@ from math import ceil
 import numpy as np
 import quaternion as quat
 
-# Environment variables
+# Variables liees a l'environement
 g = 9.81  # Intensité de la pesanteur (m/s^2)
 rho = 1.225  # Masse volumique de l'air (kg/m^3)
 

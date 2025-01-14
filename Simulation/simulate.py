@@ -9,7 +9,7 @@ ax = fig.add_subplot(projection='3d')
 
 # for Cx in [0.6,0.65,0.7,0.75,0.8]:
 for Cx in [0.7]:
-    # Define and create rocket
+    # Definition et creation de rocket
     # Hellfire
     rocket = Rocket(rocket_mass=7.400,
                     motor_name="Pro54-5G WT",
