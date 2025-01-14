@@ -95,16 +95,6 @@ class SimulationEuler:
             self.time += self.h
 
         return self.trajectory, self.euler_angles
-
-    def plot_trajectory(self, ax):
-        x, y, z = self.trajectory.T
-        thrust_end = ceil(self.rocket.thrust_time[-1] / self.h)
-
-        ax.plot3D(x[:thrust_end+1], y[:thrust_end+1], z[:thrust_end+1], 'r')
-        ax.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
     
     def export_data(self, filename="SIM-EULER.txt"):
         export = ""
@@ -207,16 +197,6 @@ class SimulationQuaternion:
                 self.q[i], self.wi = self.update_rotation(self.self_acceleration, self.q[i-1], self.wi, self.h)
             self.time += self.h
         return self.trajectory, self.q
-    
-    def plot_trajectory(self,ax):
-        x, y, z = self.trajectory.T
-        thrust_end = ceil(self.rocket.thrust_time[-1] / self.h)
-
-        ax.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r')
-        ax.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
 
     def export_data(self, filename="SIM-QUAT.txt"):
         export = ""

@@ -26,12 +26,12 @@ for Cx in [0.7]:
     #                 para_projected_surface=1.99,
     #                 rocket_drag_coefficient=0.85)
     # Mistral
-    rocket = Rocket(rocket_mass=1.500,
-                    motor_name="Pro24-6G BS",
-                    open_para=8,
-                    rocket_projected_surface=0.003167,
-                    para_projected_surface=0.44,
-                    rocket_drag_coefficient=0.6)
+    # rocket = Rocket(rocket_mass=1.500,
+    #                 motor_name="Pro24-6G BS",
+    #                 open_para=8,
+    #                 rocket_projected_surface=0.003167,
+    #                 para_projected_surface=0.44,
+    #                 rocket_drag_coefficient=0.6)
 
     # Creation de l'objet simulation
     sim = SimulationEuler(rocket, simulation_duration=200)
@@ -40,10 +40,17 @@ for Cx in [0.7]:
     # Execution de la simulation
     sim.run_simulation()
 
-    sim.plot_trajectory(ax)
-    plt.show()
+    # Plot trajectory
+    def plot_traj(axes):
+        x, y, z = sim.trajectory.T
+        thrust_end = ceil(sim.rocket.thrust_time[-1] / sim.h)
+        axes.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r')
+        axes.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g')
+        axes.set_xlabel('x')
+        axes.set_ylabel('y')
+        axes.set_zlabel('z')
+    plot_traj(ax)
     sim.export_data()
-
 
     # ---------- Calculs ----------
     # Altitude maximale
@@ -52,7 +59,11 @@ for Cx in [0.7]:
     # Vitesse moyenne de montée
     print("Vitesse de montée moyenne :", sim.velocity[:np.argmax([np.linalg.norm(e) for e in sim.velocity])].mean())
     # Vitesse
-    # v=np.array([(np.linalg.norm(sim.trajectory[i])-np.linalg.norm(sim.trajectory[i-1]))/sim.h for i in range(1,len(sim.trajectory))])
+    v=np.array([(np.linalg.norm(sim.trajectory[i])-np.linalg.norm(sim.trajectory[i-1]))/sim.h for i in range(1,len(sim.trajectory))])
     # Vitesse z
-    # plt.plot(range(len(sim.velocity)),sim.velocity)
-    # plt.show()
+    vz=sim.velocity.T[2]
+plt.show()
+
+plt.plot(range(len(v)),v)
+plt.plot(range(len(vz)),vz)
+plt.show()
