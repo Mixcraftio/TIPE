@@ -18,7 +18,7 @@ for Cx in [0.7]:
                     para_projected_surface=1.99,
                     # para_projected_surface=1.99/2,
                     rocket_drag_coefficient=Cx)
-    # Karlavagnen
+    # # Karlavagnen
     # rocket = Rocket(rocket_mass=7.730,
     #                 motor_name="Pro54-5G C",
     #                 open_para=16.5,
@@ -64,6 +64,10 @@ for Cx in [0.7]:
     vz=sim.velocity.T[2]
 plt.show()
 
-plt.plot(range(len(v)),v)
-plt.plot(range(len(vz)),vz)
+time=[sim.h*i for i in range(sim.simuNPoints)]
+plt.title("Vitesse simulée de la fusée")
+plt.plot(time[:-1],v,label="Vitesse 3axes")
+plt.plot(time,vz,label="Vitesse en z")
+plt.xlabel("Vitesse (m.s-1)"); plt.ylabel("Temps (ms)")
+plt.legend(); plt.grid()
 plt.show()

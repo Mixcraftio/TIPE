@@ -10,24 +10,30 @@ altitude = lambda p: -((R*T0)/(M*g))*np.log(p/p0)
 #------------------- Data Import -------------------
 # Hellfire
 # df = pd.read_csv("../DATA/TENSIO.TXT", sep=";", usecols=[0, 2], engine="python")
-# df = pd.read_csv("../DATA/TENSIO-TRIM.TXT", sep=";", usecols=[0, 2], engine="python")
-# df = df.dropna()
-# t_brut, bmp_brut = df.iloc[:, 0].values, df.iloc[:, 1].values
-# decollageTensio=1752882
-# tzm=t_brut[3450:3750]-decollageTensio;bmp=bmp_brut[3450:3750] # zoom vol
-# p0=bmp_brut[3450]
-# montee=t_brut[3500:3542]-decollageTensio;calib_montee=altitude(bmp_brut[3500:3542])
-# descente=t_brut[3538:3720]-decollageTensio;calib_descente=altitude(bmp_brut[3538:3720])
-
-# Karlavagnen
-df = pd.read_csv("../DATA/DATA_Tensio-Alti.TXT", sep="\t", usecols=[0, 2], engine="python")
+df = pd.read_csv("../DATA/TENSIO-TRIM.TXT", sep=";", usecols=[0, 2], engine="python")
 df = df.dropna()
 t_brut, bmp_brut = df.iloc[:, 0].values, df.iloc[:, 1].values
-decollageTensio=1090500
-tzm=t_brut[21400:24400]-decollageTensio;bmp=bmp_brut[21400:24400] # zoom vol
-p0=bmp_brut[21400]
-montee=t_brut[21400:24400]-decollageTensio;calib_montee=altitude(bmp_brut[21400:24400])
-descente=t_brut[21400:24400]-decollageTensio;calib_descente=altitude(bmp_brut[21400:24400])
+decollageTensio=1752882
+tzm=t_brut[3450:3750]-decollageTensio;bmp=bmp_brut[3450:3750] # zoom vol
+p0=bmp_brut[3450]
+montee=t_brut[3500:3542]-decollageTensio;calib_montee=altitude(bmp_brut[3500:3542])
+descente=t_brut[3538:3720]-decollageTensio;calib_descente=altitude(bmp_brut[3538:3720])
+#Sim
+df = pd.read_csv("../DATA/OpenRocket-Simulation-SansVent.csv", comment="#", sep=",", engine="python")
+df = df.dropna()
+t_sim, alti_sim = df.iloc[:, 0].values, df.iloc[:, 1].values
+t_sim*=1000 # s -> ms
+
+
+# Karlavagnen
+# df = pd.read_csv("../DATA/DATA_Tensio-Alti.TXT", sep="\t", usecols=[0, 2], engine="python")
+# df = df.dropna()
+# t_brut, bmp_brut = df.iloc[:, 0].values, df.iloc[:, 1].values
+# decollageTensio=1090500
+# tzm=t_brut[21400:24400]-decollageTensio;bmp=bmp_brut[21400:24400] # zoom vol
+# p0=bmp_brut[21400]
+# montee=t_brut[21400:24400]-decollageTensio;calib_montee=altitude(bmp_brut[21400:24400])
+# descente=t_brut[21400:24400]-decollageTensio;calib_descente=altitude(bmp_brut[21400:24400])
 #---------------------------------------------------
 
 
@@ -56,6 +62,7 @@ altitude_plot.plot(tzm,calib, label="Altitude mesurée")
 altitude_plot.grid()
 t=np.linspace(0,200000,len(tx))
 altitude_plot.plot(t,tz,color="tab:red",label="Altitude z de simulation")
+altitude_plot.plot(t_sim,alti_sim,color="tab:green",label="Altitude z de simulation OpenRocket")
 altitude_plot.legend()
 fig2.savefig("./OUT/Altitude.svg")
 plt.show()

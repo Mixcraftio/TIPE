@@ -5,7 +5,7 @@ with open("Motors/motors.json") as f:
     rocket_motors = json.loads(f.read())
 
 class Rocket:
-    def __init__(self, rocket_mass, motor_name, open_para, rocket_projected_surface, para_projected_surface, rocket_drag_coefficient=0.7, para_drag_coefficient=1, gisement=45, site=80):
+    def __init__(self, rocket_mass, motor_name, open_para, rocket_projected_surface, para_projected_surface, rocket_drag_coefficient=0.7, para_drag_coefficient=0.8, gisement=45, site=80):
 
         if motor_name not in rocket_motors:
             raise ValueError(f"Motor '{motor_name}' not found in the available motor list : {list(rocket_motors.keys())}")
