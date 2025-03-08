@@ -1,0 +1,115 @@
+{
+    "elliptical_fins": {},
+    "environment": {
+        "base_pressure": 101325.0,
+        "base_temperature": 298.15,
+        "date": null,
+        "elevation": 0.0,
+        "geodetic_method": "spherical",
+        "latitude": 43.21670,
+        "longitude": -0.04737,
+        "wind_average": 0.1,
+        "wind_turbulence": 0.0
+    },
+    "flight": {
+        "heading": 90.0,
+        "inclination": 80.0,
+        "rail_length": 2.0
+    },
+    "id": {
+        "comment": null,
+        "designer": null,
+        "filepath": "rocket.ork",
+        "rocket_name": "Hellfire"
+    },
+    "motors": {
+        "center_of_dry_mass_position": 0,
+        "coordinate_system_orientation": "nozzle_to_combustion_chamber",
+        "dry_inertia": [
+            0,
+            0,
+            0
+        ],
+        "dry_mass": 0,
+        "grain_density": 1413.6730470616137,
+        "grain_initial_height": 0.404,
+        "grain_initial_inner_radius": 0.0135,
+        "grain_number": 1,
+        "grain_outer_radius": 0.027,
+        "grain_separation": 0,
+        "grains_center_of_mass_position": 0,
+        "nozzle_position": -0.202,
+        "nozzle_radius": 0.02025,
+        "position": 2.0294479591836723,
+        "throat_radius": 0.0135,
+        "thrust_source": ".\\OUT\\thrust_source.csv"
+    },
+    "nosecones": {
+        "base_radius": 0.039,
+        "kind": "ellipsoid",
+        "length": 0.040000000000000036,
+        "name": "Ogive",
+        "position": 0.0
+    },
+    "parachutes": {
+        "0": {
+            "area": 0.4128249096357838,
+            "cd": 0.8,
+            "cds": 0.33025992770862705,
+            "deploy_altitude": null,
+            "deploy_delay": 16.0,
+            "deploy_event": "apogee",
+            "name": "Parachute"
+        }
+    },
+    "rail_buttons": {},
+    "rocket": {
+        "center_of_mass_without_propellant": 1.102,
+        "coordinate_system_orientation": "nose_to_tail",
+        "drag_curve": ".\\OUT\\drag_curve.csv",
+        "inertia": [
+            0.017,
+            0.017,
+            3.09
+        ],
+        "mass": 8.019,
+        "radius": 0.05
+    },
+    "stored_results": {
+        "burnout_stability_margin": 6.756,
+        "flight_time": 85.024,
+        "ground_hit_velocity": 20.059,
+        "launch_rod_velocity": 23.643,
+        "max_acceleration": 141.309,
+        "max_altitude": 1396.913,
+        "max_mach": 0.597,
+        "max_stability_margin": 6.774,
+        "max_thrust": 1347.218,
+        "max_velocity": 206.389,
+        "min_stability_margin": 5.775,
+        "time_to_apogee": 16.001
+    },
+    "tails": {
+        "0": {
+            "bottom_radius": 0.05,
+            "length": 0.15,
+            "name": "Transition",
+            "position": 0.040000000000000036,
+            "top_radius": 0.04
+        }
+    },
+    "trapezoidal_fins": {
+        "0": {
+            "cant_angle": 0.0,
+            "name": "Ailerons Trapézoïdaux",
+            "number": 4,
+            "position": 1.915,
+            "root_chord": 0.3,
+            "section": "square",
+            "span": 0.13,
+            "sweep_angle": null,
+            "sweep_length": 0.075,
+            "tip_chord": 0.15
+        }
+    }
+}

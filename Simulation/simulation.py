@@ -96,19 +96,22 @@ class SimulationEuler:
 
         return self.trajectory, self.euler_angles
     
-    def export_data(self, filename="SIM-EULER.txt"):
+    def export_data(self, filename="./OUT/SIM-EULER.csv"):
         export = ""
-        export += f"{self.simulation_duration};{self.h};{self.rocket.thrust_time[-1]}\n"
+        export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), theta (rad), phi (rad), psi (rad) \n"
 
         # Reformatage des angles d'Euler
-        e2 = [np.array([i[2], i[1], i[0]]) for i in self.euler_angles]
+        e2 = [np.array([i[2], i[1], i[0]]) for i in self.euler_angles] #blender
 
         for r in range(self.simuNPoints):
+            # Export des timestamps
+            export += str(self.h*r) + ","
+
             # Export de la trajectoire
-            export += ";".join(map(str, self.trajectory[r])) + ";"
+            export += ",".join(map(str, self.trajectory[r])) + ","
 
             # Export des angles d'Euler
-            export += ";".join(map(str, e2[r])) + "\n"
+            export += ",".join(map(str, e2[r])) + "\n"
 
         # Ecriture dans le fichier
         with open(filename, "w") as f:
@@ -198,19 +201,22 @@ class SimulationQuaternion:
             self.time += self.h
         return self.trajectory, self.q
 
-    def export_data(self, filename="SIM-QUAT.txt"):
+    def export_data(self, filename="./OUT/SIM-QUAT.csv"):
         export = ""
-        export += f"{self.simulation_duration};{self.h};{self.rocket.thrust_time[-1]}\n"
+        export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), q1, q2, q3, q4 \n"
 
         # Conversion des quaternions en tableaux de float
         q2 = [quat.as_float_array(qi) for qi in self.q]
 
         for r in range(self.simuNPoints):
+            # Export des timestamps
+            export += str(self.h*r) + ","
+
             # Export de la trajectoire
-            export += ";".join(map(str, self.trajectory[r])) + ";"
+            export += ",".join(map(str, self.trajectory[r])) + ","
 
             # Export des quaternions
-            export += ";".join(map(str, q2[r])) + "\n"
+            export += ",".join(map(str, q2[r])) + "\n"
 
         # Ecriture dans le fichier
         with open(filename, "w") as f:
