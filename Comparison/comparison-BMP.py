@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-g=9.81; Cp=1006; T0=30+273.15; R=8.314; M=29e-3
+g=9.81; Cp=1006; T0=25+273.15; R=8.314; M=29e-3
 altitude = lambda p: -((R*T0)/(M*g))*np.log(p/p0)
 # altitude = lambda p: 3146-(p/10)
 
@@ -10,7 +10,8 @@ altitude = lambda p: -((R*T0)/(M*g))*np.log(p/p0)
 #------------------- Data Import -------------------
 # Hellfire
 # df = pd.read_csv("../DATA/TENSIO.TXT", sep=";", usecols=[0, 2], engine="python")
-dataFile = pd.read_csv("../DATA/TENSIO-TRIM.TXT", sep=";", usecols=[0, 2], engine="python")
+# dataFile = pd.read_csv("../DATA/TENSIO-TRIM.TXT", sep=";", usecols=[0, 2], engine="python")
+dataFile = pd.read_csv("../DATA/bmp-compensated.csv", sep=",", usecols=[0, 2], engine="python")
 dataFile = dataFile.dropna()
 t_brut, bmp_brut = dataFile.iloc[:, 0].values, dataFile.iloc[:, 1].values
 decollageTensio=1752882
