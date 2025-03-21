@@ -1,5 +1,9 @@
-from rocket import Rocket
-from simulation import *
+
+"""Runs a simulation using the simulation module"""
+
+from math import ceil
+import simulation as sim
+import numpy as np
 import matplotlib.pyplot as plt
 
 # Prepare le graphe
@@ -11,63 +15,54 @@ ax = fig.add_subplot(projection='3d')
 for Cx in [0.7]:
     # Definition et creation de rocket
     # Hellfire
-    rocket = Rocket(rocket_mass=7.400,
-                    motor_name="Pro54-5G WT",
-                    open_para=16,
-                    rocket_projected_surface=0.008854,
-                    para_projected_surface=1.99,
-                    # para_projected_surface=1.99/2,
-                    rocket_drag_coefficient=Cx)
+    motor = sim.Motor(motor_name="Pro54-5G WT")
+    aero = sim.Aerodynamics(rocket_surface=0.008854, para_surface=1.99)
+    rocket = sim.Rocket(rocket_mass=7.400, motor=motor, open_para=16, aerodynamics=aero)
     # # Karlavagnen
-    # rocket = Rocket(rocket_mass=7.730,
-    #                 motor_name="Pro54-5G C",
-    #                 open_para=16.5,
-    #                 rocket_projected_surface=0.008854,
-    #                 para_projected_surface=1.99,
-    #                 rocket_drag_coefficient=0.85)
+    # motor = sim.Motor(motor_name="Pro54-5G C")
+    # aero = sim.Aerodynamics(rocket_surface=0.008854, para_surface=1.99, rocket_drag=0.85)
+    # rocket = sim.Rocket(rocket_mass=7.730, motor=motor, open_para=16.5, aerodynamics=aero)
     # Mistral
-    # rocket = Rocket(rocket_mass=1.500,
-    #                 motor_name="Pro24-6G BS",
-    #                 open_para=8,
-    #                 rocket_projected_surface=0.003167,
-    #                 para_projected_surface=0.44,
-    #                 rocket_drag_coefficient=0.6)
+    # motor = sim.Motor(motor_name="Pro24-6G BS")
+    # aero = sim.Aerodynamics(rocket_surface=0.003167, para_surface=0.44, rocket_drag=0.6)
+    # rocket = sim.Rocket(rocket_mass=1.500, motor=motor, open_para=8, aerodynamics=aero)
 
     # Creation de l'objet simulation
-    sim = SimulationEuler(rocket, simulation_duration=200)
+    simulation = sim.SimulationEuler(rocket, simulation_duration=200)
     # sim = SimulationQuaternion(rocket, simulation_duration=30)
 
     # Execution de la simulation
-    sim.run_simulation()
+    simulation.run_simulation()
 
     # Plot trajectory
-    def plot_traj(axes):
-        x, y, z = sim.trajectory.T
-        thrust_end = ceil(sim.rocket.thrust_time[-1] / sim.h)
-        axes.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r')
-        axes.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g')
-        axes.set_xlabel('x')
-        axes.set_ylabel('y')
-        axes.set_zlabel('z')
-    plot_traj(ax)
-    sim.export_data()
+    x, y, z = simulation.trajectory.T
+    thrust_end = ceil(simulation.rocket.motor.thrust_time[-1] / simulation.h)
+    ax.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r')
+    ax.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    simulation.export_data()
 
     # ---------- Calculs ----------
     # Altitude maximale
-    apogee=max(sim.trajectory[:,2])
+    apogee=max(simulation.trajectory[:,2])
     print("Apogée :", apogee)
     # Vitesse moyenne de montée
-    print("Vitesse de montée moyenne :", sim.velocity[:np.argmax([np.linalg.norm(e) for e in sim.velocity])].mean())
+    index_apogee = np.argmax([np.linalg.norm(e) for e in simulation.velocity])
+    print("Vitesse de montée moyenne :", simulation.velocity[:index_apogee].mean())
     # Vitesse
-    v=np.array([(np.linalg.norm(sim.trajectory[i])-np.linalg.norm(sim.trajectory[i-1]))/sim.h for i in range(1,len(sim.trajectory))])
+    v=np.array([(np.linalg.norm(simulation.trajectory[i])-np.linalg.norm(simulation.trajectory[i-1]))/simulation.h for i in range(1,len(simulation.trajectory))])
     # Vitesse z
-    vz=sim.velocity.T[2]
+    vz=simulation.velocity.T[2]
 plt.show()
 
-time=[sim.h*i for i in range(sim.simuNPoints)]
+time=[simulation.h*i for i in range(simulation.simuNPoints)]
 plt.title("Vitesse simulée de la fusée")
 plt.plot(time[:-1],v,label="Vitesse 3axes")
 plt.plot(time,vz,label="Vitesse en z")
-plt.xlabel("Vitesse (m.s-1)"); plt.ylabel("Temps (ms)")
-plt.legend(); plt.grid()
+plt.xlabel("Vitesse (m.s-1)")
+plt.ylabel("Temps (ms)")
+plt.legend()
+plt.grid()
 plt.show()

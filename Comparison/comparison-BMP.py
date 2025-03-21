@@ -40,6 +40,12 @@ dataFilePerso = dataFilePerso.dropna()
 t_sim_Perso, alti_sim_Perso = dataFilePerso.iloc[:, 0].values, dataFilePerso.iloc[:, 3].values
 vites_sim_Perso = np.array([(alti_sim_Perso[i]-alti_sim_Perso[i-1])/(t_sim_Perso[i]-t_sim_Perso[i-1]) for i in range(1,len(t_sim_Perso))] + [(alti_sim_Perso[len(t_sim_Perso)-1]-alti_sim_Perso[len(t_sim_Perso)-2])/(t_sim_Perso[len(t_sim_Perso)-1]-t_sim_Perso[len(t_sim_Perso)-2])])
 t_sim_Perso*=1000 # s -> ms
+#StabTraj
+dataFileStabTraj = pd.read_csv("../DATA/StabTraj-Simulation-SansVent.csv", comment="#", sep=",", engine="python")
+dataFileStabTraj = dataFileStabTraj.dropna()
+t_sim_StabTraj, alti_sim_StabTraj = dataFileStabTraj.iloc[:, 0].values, dataFileStabTraj.iloc[:, 1].values
+vites_sim_StabTraj = np.array([(alti_sim_StabTraj[i]-alti_sim_StabTraj[i-1])/(t_sim_StabTraj[i]-t_sim_StabTraj[i-1]) for i in range(1,len(t_sim_StabTraj))] + [(alti_sim_StabTraj[len(t_sim_StabTraj)-1]-alti_sim_StabTraj[len(t_sim_StabTraj)-2])/(t_sim_StabTraj[len(t_sim_StabTraj)-1]-t_sim_StabTraj[len(t_sim_StabTraj)-2])])
+t_sim_StabTraj*=1000 # s -> ms
 #OpenRocket
 dataFileOpenRocket = pd.read_csv("../DATA/OpenRocket-Simulation-SansVent.csv", comment="#", sep=",", engine="python")
 dataFileOpenRocket = dataFileOpenRocket.dropna()
@@ -72,9 +78,10 @@ altitude_plot.set_ylabel("Altitude (m)")
 
 altitude_plot.plot(tzm,calib, label="Altitude mesurée")
 
-altitude_plot.plot(t_sim_Perso,alti_sim_Perso,color="tab:red",label="Altitude z de simulation Perso")
-altitude_plot.plot(t_sim_OpenRocket,alti_sim_OpenRocket,color="tab:green",label="Altitude z de simulation OpenRocket")
-altitude_plot.plot(t_sim_RocketPy,alti_sim_RocketPy,color="tab:orange",label="Altitude z de simulation RocketPy")
+altitude_plot.plot(t_sim_Perso,alti_sim_Perso,color="tab:orange",label="Altitude z de simulation Perso")
+altitude_plot.plot(t_sim_StabTraj,alti_sim_StabTraj,color="tab:green",label="Altitude z de simulation StabTraj")
+altitude_plot.plot(t_sim_OpenRocket,alti_sim_OpenRocket,color="tab:red",label="Altitude z de simulation OpenRocket")
+altitude_plot.plot(t_sim_RocketPy,alti_sim_RocketPy,color="tab:grey",label="Altitude z de simulation RocketPy")
 
 altitude_plot.grid()
 altitude_plot.legend()
@@ -98,9 +105,10 @@ vites.plot(tzm[:-1],vit, label="Vitesse z calculée")
 vites.hlines(np.mean(vit_descente), xmin=descente[0], xmax=descente[-1], color="tab:purple", label="Moyenne de la vitesse z de descente")
 vites.set_ylim((-50,205))
 
-vites.plot(t_sim_Perso,vites_sim_Perso,color="tab:red",label="Vitesse z de simulation Perso")
-vites.plot(t_sim_OpenRocket,vites_sim_OpenRocket,color="tab:green",label="Vitesse z de simulation OpenRocket")
-vites.plot(t_sim_RocketPy,vites_sim_RocketPy,color="tab:orange",label="Vitesse z de simulation RocketPy")
+vites.plot(t_sim_Perso,vites_sim_Perso,color="tab:orange",label="Vitesse z de simulation Perso")
+vites.plot(t_sim_StabTraj,vites_sim_StabTraj,color="tab:green",label="Vitesse z de simulation StabTraj")
+vites.plot(t_sim_OpenRocket,vites_sim_OpenRocket,color="tab:red",label="Vitesse z de simulation OpenRocket")
+vites.plot(t_sim_RocketPy,vites_sim_RocketPy,color="tab:grey",label="Vitesse z de simulation RocketPy")
 
 vites.grid()
 vites.legend()

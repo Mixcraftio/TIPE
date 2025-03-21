@@ -1,19 +1,86 @@
+
+"""Simulation module for model rockets"""
+
+import json
 from math import ceil
 import numpy as np
 import quaternion as quat
+from scipy.interpolate import interp1d
+
+
 
 # Variables liees a l'environement
 g = 9.81  # Intensité de la pesanteur (m/s^2)
 rho = 1.225  # Masse volumique de l'air (kg/m^3)
 
+with open("Motors/motors.json", encoding="UTF-8") as f:
+    rocket_motors = json.loads(f.read())
+
+
+
+class Motor:
+    """Gère les propriétés du moteur de la fusée."""
+    def __init__(self, motor_name: str):
+        if motor_name not in rocket_motors:
+            raise ValueError(f"Le moteur '{motor_name}' n'est pas disponible. Moteurs disponibles : {list(rocket_motors.keys())}")
+        
+        motor_data = rocket_motors[motor_name]
+        self.thrust_time = motor_data["thrust_time"]
+        self.thrust_force = motor_data["thrust_force"]
+        self.thrust = interp1d(self.thrust_time, self.thrust_force)  # Interpolation de la courbe de poussée
+        self.mass = motor_data["mass"]
+        self.casing_mass = motor_data["casing_mass"]
+        self.propellant_mass = motor_data["propellant_mass"]
+        self.propellant = interp1d(self.thrust_time, self.propellant_mass)  # Interpolation de la courbe de masse du carburant
+
+    def get_thrust(self, t: float) -> float:
+        """Renvoie la poussée au temps t."""
+        return self.thrust(t) if t <= self.thrust_time[-1] else 0
+
+    def get_propellant_mass(self, t: float) -> float:
+        """Renvoie la masse de carburant restante au temps t."""
+        return self.propellant(t) if t <= self.thrust_time[-1] else 0
+
+
+class Aerodynamics:
+    """Gère les propriétés aérodynamiques de la fusée."""
+    def __init__(self, rocket_surface: float, para_surface: float, rocket_drag: float = 0.7, para_drag: float = 0.8):
+        self.rocket_surface = rocket_surface  # Surface projetée de la fusée
+        self.para_surface = para_surface  # Surface projetée du parachute
+        self.rocket_drag = rocket_drag  # Coefficient de traînée de la fusée
+        self.para_drag = para_drag  # Coefficient de traînée du parachute
+
+
+class Rocket:
+    """Définit une fusée pour une simulation."""
+    def __init__(self, rocket_mass: float, motor: Motor, open_para: float, aerodynamics: Aerodynamics, gisement: float = 45, site: float = 80):
+        self.rocket_mass = rocket_mass  # Masse à vide de la fusée
+        self.motor = motor  # Objet moteur
+        self.m = rocket_mass + motor.mass  # Masse totale (fusée + moteur)
+        self.open_para = open_para  # Temps d'ouverture du parachute
+        self.aerodynamics = aerodynamics  # Propriétés aérodynamiques
+        self.gisement = gisement  # Angle d'azimut initial (degrés)
+        self.site = site  # Angle d'élévation initial (degrés)
+
+    def Thrust(self, t: float) -> float:
+        """Renvoie la valeur de la poussée au temps t."""
+        return self.motor.get_thrust(t)
+
+    def Mass(self, t: float) -> float:
+        """Renvoie la masse totale au temps t."""
+        return self.rocket_mass + self.motor.casing_mass + self.motor.get_propellant_mass(t)
+
+
+
 class SimulationEuler:
-    def __init__(self, rocket, simulation_duration, fps=60):
+    def __init__(self, rocket: Rocket, simulation_duration: float = 200, fps: int = 60):
         self.rocket = rocket # Une instance de l'objet rocket
         self.simulation_duration = simulation_duration
         self.fps = fps
         self.h = 1 / self.fps # Calcul du pas d'intégration
         self.simuNPoints = ceil(simulation_duration / self.h) # Nombre de points de la simulation
         self.time = 0
+        self.time_index = 0
 
         self.trajectory = np.zeros((self.simuNPoints, 3), dtype=np.float64)
         self.velocity = np.zeros((self.simuNPoints, 3), dtype=np.float64)
@@ -48,9 +115,9 @@ class SimulationEuler:
         thrust = np.array([thrust_x, thrust_y, thrust_z])
 
         # Résistance de l'air
-        resistance = -0.5 * rho * self.rocket.S * self.rocket.Cx * np.square(velocity)
-        if t >= self.rocket.t_open_para:
-            resistancePara = 0.5 * rho * self.rocket.Sp * self.rocket.Cp * np.array([0,0,velocity[2]**2])
+        resistance = -0.5 * rho * self.rocket.aerodynamics.rocket_surface * self.rocket.aerodynamics.rocket_drag * np.square(velocity)
+        if t >= self.rocket.open_para:
+            resistancePara = 0.5 * rho * self.rocket.aerodynamics.para_surface * self.rocket.aerodynamics.para_drag * np.array([0,0,velocity[2]**2])
         else:
             resistancePara = 0
 
@@ -114,19 +181,19 @@ class SimulationEuler:
             export += ",".join(map(str, e2[r])) + "\n"
 
         # Ecriture dans le fichier
-        with open(filename, "w") as f:
+        with open(filename, "w", encoding="UTF-8") as f:
             f.write(export)
 
 
-
 class SimulationQuaternion:
-    def __init__(self, rocket, simulation_duration, fps=60):
+    def __init__(self, rocket: Rocket, simulation_duration: float = 200, fps: int = 60):
         self.rocket = rocket # Une instance de l'objet rocket
         self.simulation_duration = simulation_duration
         self.fps = fps
         self.h = 1 / self.fps # Calcul du pas d'intégration
         self.simuNPoints = ceil(simulation_duration / self.h) # Nombre de points de la simulation
         self.time = 0
+        self.time_index = 0
 
         self.trajectory = np.zeros((self.simuNPoints, 3), dtype=np.float64)
         self.velocity = np.zeros((self.simuNPoints, 3), dtype=np.float64)
@@ -219,6 +286,5 @@ class SimulationQuaternion:
             export += ",".join(map(str, q2[r])) + "\n"
 
         # Ecriture dans le fichier
-        with open(filename, "w") as f:
+        with open(filename, "w", encoding="UTF-8") as f:
             f.write(export)
-
