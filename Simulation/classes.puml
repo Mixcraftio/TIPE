@@ -6,6 +6,10 @@ class "Aerodynamics" as simulation.Aerodynamics {
   rocket_drag : float
   rocket_surface : float
 }
+class "DataAnalysis" as simulation.DataAnalysis {
+  simulation
+  graph3d()
+}
 class "Motor" as simulation.Motor {
   casing_mass
   mass
@@ -38,7 +42,7 @@ class "SimulationEuler" as simulation.SimulationEuler {
   simulation_duration : float
   theta
   time : int
-  time_index
+  time_index : int
   trajectory : ndarray
   velocity : ndarray
   Euler_SingleStep(velocity, position, h)
@@ -56,7 +60,7 @@ class "SimulationQuaternion" as simulation.SimulationQuaternion {
   simuNPoints
   simulation_duration : float
   time : int
-  time_index
+  time_index : int
   trajectory : ndarray
   velocity : ndarray
   wi : ndarray
