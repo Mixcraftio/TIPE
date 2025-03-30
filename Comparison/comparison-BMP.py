@@ -36,7 +36,7 @@ print("Altitude maximale (apogee): " + str(max(calib)) + " m")
 
 #------------- Simulation Data Import --------------
 #Perso
-dataFilePerso = pd.read_csv("../Simulation/OUT/SIM-EULER.csv", comment="#", sep=",", engine="python")
+dataFilePerso = pd.read_csv("../Simulation/OUT/SimulationTrajectory.csv", comment="#", sep=",", engine="python")
 dataFilePerso = dataFilePerso.dropna()
 t_sim_Perso, alti_sim_Perso = dataFilePerso.iloc[:, 0].values, dataFilePerso.iloc[:, 3].values
 vites_sim_Perso = np.array([(alti_sim_Perso[i]-alti_sim_Perso[i-1])/(t_sim_Perso[i]-t_sim_Perso[i-1]) for i in range(1,len(t_sim_Perso))] + [(alti_sim_Perso[len(t_sim_Perso)-1]-alti_sim_Perso[len(t_sim_Perso)-2])/(t_sim_Perso[len(t_sim_Perso)-1]-t_sim_Perso[len(t_sim_Perso)-2])])

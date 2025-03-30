@@ -6,7 +6,7 @@ from math import ceil
 import numpy as np
 import quaternion as quat
 from scipy.interpolate import interp1d
-
+import matplotlib.pyplot as plt
 
 
 # Variables liees a l'environement
@@ -15,7 +15,6 @@ rho = 1.225  # Masse volumique de l'air (kg/m^3)
 
 with open("Motors/motors.json", encoding="UTF-8") as f:
     rocket_motors = json.loads(f.read())
-
 
 
 class Motor:
@@ -53,7 +52,7 @@ class Aerodynamics:
 
 class Rocket:
     """Définit une fusée pour une simulation."""
-    def __init__(self, rocket_mass: float, motor: Motor, open_para: float, aerodynamics: Aerodynamics, gisement: float = 45, site: float = 80):
+    def __init__(self, rocket_mass: float, motor: Motor, aerodynamics: Aerodynamics, open_para: float, gisement: float = 45, site: float = 80):
         self.rocket_mass = rocket_mass  # Masse à vide de la fusée
         self.motor = motor  # Objet moteur
         self.m = rocket_mass + motor.mass  # Masse totale (fusée + moteur)
@@ -78,13 +77,13 @@ class SimulationEuler:
         self.simulation_duration = simulation_duration
         self.fps = fps
         self.h = 1 / self.fps # Calcul du pas d'intégration
-        self.simuNPoints = ceil(simulation_duration / self.h) # Nombre de points de la simulation
+        self.simulation_steps = ceil(simulation_duration / self.h) # Nombre de points de la simulation
         self.time = 0
         self.time_index = 0
 
-        self.trajectory = np.zeros((self.simuNPoints, 3), dtype=np.float64)
-        self.velocity = np.zeros((self.simuNPoints, 3), dtype=np.float64)
-        self.euler_angles = np.zeros((self.simuNPoints, 3), dtype=np.float64)
+        self.trajectory = np.zeros((self.simulation_steps, 3), dtype=np.float64)
+        self.velocity = np.zeros((self.simulation_steps, 3), dtype=np.float64)
+        self.euler_angles = np.zeros((self.simulation_steps, 3), dtype=np.float64)
 
         self.theta = self.rocket.gisement * np.pi / 180
         self.phi = (90 - self.rocket.site) * np.pi / 180
@@ -150,7 +149,7 @@ class SimulationEuler:
 
     def run_simulation(self):
         # Loop principal
-        for i in range(1, self.simuNPoints):
+        for i in range(1, self.simulation_steps):
             self.time_index = i
             self.velocity[i] = self.RK4_SingleStep(self.acceleration, self.velocity[i-1], self.time, self.h)
             position = self.Euler_SingleStep(self.velocity[i], self.trajectory[i-1], self.h)
@@ -163,27 +162,6 @@ class SimulationEuler:
             self.time += self.h
 
         return self.trajectory, self.euler_angles
-    
-    def export_data(self, filename="./OUT/SIM-EULER.csv"):
-        export = ""
-        export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), theta (rad), phi (rad), psi (rad) \n"
-
-        # Reformatage des angles d'Euler
-        e2 = [np.array([i[2], i[1], i[0]]) for i in self.euler_angles] #blender
-
-        for r in range(self.simuNPoints):
-            # Export des timestamps
-            export += str(self.h*r) + ","
-
-            # Export de la trajectoire
-            export += ",".join(map(str, self.trajectory[r])) + ","
-
-            # Export des angles d'Euler
-            export += ",".join(map(str, e2[r])) + "\n"
-
-        # Ecriture dans le fichier
-        with open(filename, "w", encoding="UTF-8") as f:
-            f.write(export)
 
 
 class SimulationQuaternion:
@@ -192,13 +170,13 @@ class SimulationQuaternion:
         self.simulation_duration = simulation_duration
         self.fps = fps
         self.h = 1 / self.fps # Calcul du pas d'intégration
-        self.simuNPoints = ceil(simulation_duration / self.h) # Nombre de points de la simulation
+        self.simulation_steps = ceil(simulation_duration / self.h) # Nombre de points de la simulation
         self.time = 0
         self.time_index = 0
 
-        self.trajectory = np.zeros((self.simuNPoints, 3), dtype=np.float64)
-        self.velocity = np.zeros((self.simuNPoints, 3), dtype=np.float64)
-        self.q = np.zeros(self.simuNPoints, dtype=np.quaternion)
+        self.trajectory = np.zeros((self.simulation_steps, 3), dtype=np.float64)
+        self.velocity = np.zeros((self.simulation_steps, 3), dtype=np.float64)
+        self.q = np.zeros(self.simulation_steps, dtype=np.quaternion)
 
         theta = self.rocket.gisement * np.pi / 180
         phi = (90 - self.rocket.site) * np.pi / 180
@@ -256,7 +234,7 @@ class SimulationQuaternion:
 
     def run_simulation(self):
         # Loop principal
-        for i in range(1, self.simuNPoints):
+        for i in range(1, self.simulation_steps):
             self.time_index = i
             self.velocity[i] = self.RK4_SingleStep(self.acceleration, self.velocity[i-1], self.time, self.h)
             position = self.Euler_SingleStep(self.velocity[i], self.trajectory[i-1], self.h)
@@ -269,22 +247,63 @@ class SimulationQuaternion:
             self.time += self.h
         return self.trajectory, self.q
 
-    def export_data(self, filename="./OUT/SIM-QUAT.csv"):
+
+class DataAnalysis:
+    def __init__(self, simulation):
+        self.simulation = simulation
+
+    def simulation_report(self):
+        # Altitude maximale
+        apogee = max(self.simulation.trajectory[:,2])
+        print("Apogée :", apogee)
+        # Norme de la vitesse
+        vnorm = np.linalg.norm(self.simulation.velocity, axis=1)
+        # Vitesse moyenne de montée
+        index_apogee = np.argmax(vnorm)
+        vmean = vnorm[:index_apogee].mean()
+        print("Vitesse de montée moyenne :", vmean)
+        return apogee, vnorm, vmean
+
+    def graph_trajectory(self, filename="./OUT/Trajectory.svg"):
+        """Trace, sauvegarde et montre le graphe de la trajectoire de la fusée."""
+        fig = plt.figure()
+        fig.suptitle("Trajectory Simulation")
+        ax = fig.add_subplot(projection='3d')
+
+        x, y, z = self.simulation.trajectory.T
+        thrust_end = ceil(self.simulation.rocket.motor.thrust_time[-1] / self.simulation.h)
+        ax.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r', label="Trajectoire de la fusée")
+        ax.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g', label="Phase de poussée")
+        ax.set_xlabel('X Position (m)')
+        ax.set_ylabel('Y Position (m)')
+        ax.set_zlabel('Z Position (m)')
+
+        ax.legend()
+        fig.savefig(filename)
+        plt.show()
+
+    def export_trajectory(self, filename="./OUT/SimulationTrajectory.csv"):
+        """Exporte la trajectoire de la fusée en un csv."""
         export = ""
-        export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), q1, q2, q3, q4 \n"
 
-        # Conversion des quaternions en tableaux de float
-        q2 = [quat.as_float_array(qi) for qi in self.q]
+        if isinstance(self.simulation, SimulationEuler):
+            export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), theta (rad), phi (rad), psi (rad) \n"
+            rot = [np.array([i[2], i[1], i[0]]) for i in self.simulation.euler_angles]
+        elif isinstance(self.simulation, SimulationQuaternion):
+            export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), q1, q2, q3, q4 \n"
+            rot = [quat.as_float_array(qi) for qi in self.simulation.q]
+        else:
+            rot = []
 
-        for r in range(self.simuNPoints):
+        for r in range(self.simulation.simulation_steps):
             # Export des timestamps
-            export += str(self.h*r) + ","
+            export += str(self.simulation.h*r) + ","
 
             # Export de la trajectoire
-            export += ",".join(map(str, self.trajectory[r])) + ","
+            export += ",".join(map(str, self.simulation.trajectory[r])) + ","
 
             # Export des quaternions
-            export += ",".join(map(str, q2[r])) + "\n"
+            export += ",".join(map(str, rot[r])) + "\n"
 
         # Ecriture dans le fichier
         with open(filename, "w", encoding="UTF-8") as f:
