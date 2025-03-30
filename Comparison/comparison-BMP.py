@@ -32,6 +32,7 @@ descente=t_brut[3538:3720]-decollageTensio;calib_descente=altitude(bmp_brut[3538
 
 
 calib=altitude(bmp)
+print("Altitude maximale (apogee): " + str(max(calib)) + " m")
 
 #------------- Simulation Data Import --------------
 #Perso
@@ -94,7 +95,7 @@ plt.show()
 vit=[(calib[i+1] - calib[i])/(tzm[i+1] - tzm[i])*1e3 for i in range(len(calib)-1)]
 vit_montee=[(calib_montee[i+1] - calib_montee[i])/(montee[i+1] - montee[i])*1e3 for i in range(len(calib_montee)-1)]
 vit_descente=[(calib_descente[i] - calib_descente[i-1])/(descente[i] - descente[i-1])*1e3 for i in range(1,len(calib_descente))]
-print("\nVitesse moyenne de descente: " + str(np.mean(vit_descente))+ " m.s-1")
+print("Vitesse moyenne de descente: " + str(np.mean(vit_descente))+ " m.s-1")
 
 fig3,vites=plt.subplots()
 vites.set_title("Vitesse z calculée des données du BMP180")

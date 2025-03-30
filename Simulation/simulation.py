@@ -116,6 +116,7 @@ class SimulationEuler:
 
         # Résistance de l'air
         resistance = -0.5 * rho * self.rocket.aerodynamics.rocket_surface * self.rocket.aerodynamics.rocket_drag * np.square(velocity)
+        # Parachute
         if t >= self.rocket.open_para:
             resistancePara = 0.5 * rho * self.rocket.aerodynamics.para_surface * self.rocket.aerodynamics.para_drag * np.array([0,0,velocity[2]**2])
         else:
