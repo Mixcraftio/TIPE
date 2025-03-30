@@ -8,7 +8,9 @@ class "Aerodynamics" as simulation.Aerodynamics {
 }
 class "DataAnalysis" as simulation.DataAnalysis {
   simulation
-  graph3d()
+  export_trajectory(filename)
+  graph_trajectory(filename)
+  simulation_report()
 }
 class "Motor" as simulation.Motor {
   casing_mass
@@ -36,10 +38,11 @@ class "SimulationEuler" as simulation.SimulationEuler {
   euler_angles : ndarray
   fps : int
   h : float
+  integrator : str
   phi
   rocket
-  simuNPoints
   simulation_duration : float
+  simulation_steps
   theta
   time : int
   time_index : int
@@ -47,8 +50,8 @@ class "SimulationEuler" as simulation.SimulationEuler {
   velocity : ndarray
   Euler_SingleStep(velocity, position, h)
   RK4_SingleStep(accel, velocity, t, h)
+  RK4_SingleStep_SecondOrder(accel, velocity, position, t, h)
   acceleration(t, velocity)
-  export_data(filename)
   run_simulation()
   updateRotation(i, theta, phi)
 }
@@ -57,8 +60,8 @@ class "SimulationQuaternion" as simulation.SimulationQuaternion {
   h : float
   q : ndarray
   rocket
-  simuNPoints
   simulation_duration : float
+  simulation_steps
   time : int
   time_index : int
   trajectory : ndarray
@@ -67,7 +70,6 @@ class "SimulationQuaternion" as simulation.SimulationQuaternion {
   Euler_SingleStep(velocity, position, h)
   RK4_SingleStep(accel, velocity, t, h)
   acceleration(t, velocity)
-  export_data(filename)
   run_simulation()
   self_acceleration(t, velocity)
   update_rotation(eq, qi, wi, h)

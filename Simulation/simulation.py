@@ -22,7 +22,7 @@ class Motor:
     def __init__(self, motor_name: str):
         if motor_name not in rocket_motors:
             raise ValueError(f"Le moteur '{motor_name}' n'est pas disponible. Moteurs disponibles : {list(rocket_motors.keys())}")
-        
+
         motor_data = rocket_motors[motor_name]
         self.thrust_time = motor_data["thrust_time"]
         self.thrust_force = motor_data["thrust_force"]
@@ -72,11 +72,11 @@ class Rocket:
 
 
 class SimulationEuler:
-    def __init__(self, rocket: Rocket, simulation_duration: float = 200, fps: int = 60):
+    def __init__(self, rocket: Rocket, integrator = "RK4-SecondOrder", simulation_duration: float = 200, fps: int = 60):
         self.rocket = rocket # Une instance de l'objet rocket
+        self.integrator = integrator # La méthode d'intégration utilisée
         self.simulation_duration = simulation_duration
-        self.fps = fps
-        self.h = 1 / self.fps # Calcul du pas d'intégration
+        self.h = 1 / fps # Calcul du pas d'intégration
         self.simulation_steps = ceil(simulation_duration / self.h) # Nombre de points de la simulation
         self.time = 0
         self.time_index = 0
@@ -100,6 +100,15 @@ class SimulationEuler:
     def Euler_SingleStep(self, velocity, position, h):
         final_position = position + velocity * h
         return final_position
+
+    def RK4_SingleStep_SecondOrder(self, accel, velocity, position, t, h):
+        k1 = accel(t, velocity)
+        k2 = accel(t + h / 2, velocity + k1 * h / 2)
+        k3 = accel(t + h / 2, velocity + k2 * h / 2)
+        k4 = accel(t + h, velocity + k3 * h)
+        final_position = position + velocity * h + (k1 + k2 + k3) * (h ** 2 / 6)
+        final_velocity = velocity + (k1 + 2 * k2 + 2 * k3 + k4) * (h / 6)
+        return final_position, final_velocity
 
     def acceleration(self, t, velocity):
         euler_angles = self.euler_angles[self.time_index - 1]
@@ -150,8 +159,13 @@ class SimulationEuler:
         # Loop principal
         for i in range(1, self.simulation_steps):
             self.time_index = i
-            self.velocity[i] = self.RK4_SingleStep(self.acceleration, self.velocity[i-1], self.time, self.h)
-            position = self.Euler_SingleStep(self.velocity[i], self.trajectory[i-1], self.h)
+            if self.integrator == "RK4-SecondOrder":
+                position, self.velocity[i] = self.RK4_SingleStep_SecondOrder(self.acceleration, self.velocity[i-1], self.trajectory[i-1], self.time, self.h)
+            elif self.integrator == "RK4-Euler":
+                self.velocity[i] = self.RK4_SingleStep(self.acceleration, self.velocity[i-1], self.time, self.h)
+                position = self.Euler_SingleStep(self.velocity[i], self.trajectory[i-1], self.h)
+            else:
+                position, self.velocity[i] = self.RK4_SingleStep_SecondOrder(self.acceleration, self.velocity[i-1], self.trajectory[i-1], self.time, self.h)
             if position[2] < 0:
                 self.velocity[i] = np.array([0, 0, 0])
                 self.trajectory[i] = np.array([self.trajectory[i-1][0], self.trajectory[i-1][1], 0])
@@ -167,8 +181,7 @@ class SimulationQuaternion:
     def __init__(self, rocket: Rocket, simulation_duration: float = 200, fps: int = 60):
         self.rocket = rocket # Une instance de l'objet rocket
         self.simulation_duration = simulation_duration
-        self.fps = fps
-        self.h = 1 / self.fps # Calcul du pas d'intégration
+        self.h = 1 / fps # Calcul du pas d'intégration
         self.simulation_steps = ceil(simulation_duration / self.h) # Nombre de points de la simulation
         self.time = 0
         self.time_index = 0
