@@ -285,8 +285,8 @@ class DataAnalysis:
 
         x, y, z = self.simulation.trajectory.T
         thrust_end = ceil(self.simulation.rocket.motor.thrust_time[-1] / self.simulation.h)
-        ax.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r', label="Trajectoire de la fusée")
-        ax.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g', label="Phase de poussée")
+        ax.plot3D(x[:thrust_end], y[:thrust_end], z[:thrust_end], 'r', label="Phase de poussée")
+        ax.plot3D(x[thrust_end:], y[thrust_end:], z[thrust_end:], 'g', label="Trajectoire de la fusée")
         ax.set_xlabel('X Position (m)')
         ax.set_ylabel('Y Position (m)')
         ax.set_zlabel('Z Position (m)')
