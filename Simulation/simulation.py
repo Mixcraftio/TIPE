@@ -2,11 +2,10 @@
 """Simulation module for model rockets"""
 
 import json
-from math import ceil
 import numpy as np
-import quaternion as quat
-from scipy.interpolate import interp1d
+from math import ceil
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 
 # Variables liees a l'environement
@@ -72,18 +71,18 @@ class Rocket:
 
 
 class SimulationEuler:
-    def __init__(self, rocket: Rocket, integrator = "RK4-SecondOrder", simulation_duration: float = 200, fps: int = 60):
+    def __init__(self, rocket: Rocket, integrator = "RK4-SecondOrder", simulation_duration: float = 200, h: float = 0.01):
         self.rocket = rocket # Une instance de l'objet rocket
         self.integrator = integrator # La méthode d'intégration utilisée
         self.simulation_duration = simulation_duration
-        self.h = 1 / fps # Calcul du pas d'intégration
+        self.h = h # Pas d'intégration
         self.simulation_steps = ceil(simulation_duration / self.h) # Nombre de points de la simulation
         self.time = 0
         self.time_index = 0
 
-        self.trajectory = np.zeros((self.simulation_steps, 3), dtype=np.float64)
-        self.velocity = np.zeros((self.simulation_steps, 3), dtype=np.float64)
-        self.euler_angles = np.zeros((self.simulation_steps, 3), dtype=np.float64)
+        self.trajectory = np.zeros((self.simulation_steps, 3))
+        self.velocity = np.zeros((self.simulation_steps, 3))
+        self.euler_angles = np.zeros((self.simulation_steps, 3))
 
         self.theta = self.rocket.gisement * np.pi / 180
         self.phi = (90 - self.rocket.site) * np.pi / 180
@@ -106,9 +105,15 @@ class SimulationEuler:
         k2 = accel(t + h / 2, velocity + k1 * h / 2)
         k3 = accel(t + h / 2, velocity + k2 * h / 2)
         k4 = accel(t + h, velocity + k3 * h)
-        final_position = position + velocity * h + (k1 + k2 + k3) * (h ** 2 / 6)
         final_velocity = velocity + (k1 + 2 * k2 + 2 * k3 + k4) * (h / 6)
-        return final_position, final_velocity
+        final_position = position + velocity * h + (k1 + k2 + k3) * (h ** 2 / 6)
+        return final_velocity, final_position
+    
+    def Euler_SingleStep_SecondOrder(self, accel, velocity, position, t, h):
+        final_acceleration = accel(t + h, velocity)
+        final_velocity = velocity + final_acceleration * h
+        final_position = position + final_velocity * h
+        return final_velocity, final_position
 
     def acceleration(self, t, velocity):
         euler_angles = self.euler_angles[self.time_index - 1]
@@ -161,11 +166,14 @@ class SimulationEuler:
         for i in range(1, self.simulation_steps):
             self.time_index = i
             if self.integrator == "RK4-SecondOrder":
-                position, self.velocity[i] = self.RK4_SingleStep_SecondOrder(self.acceleration, self.velocity[i-1], self.trajectory[i-1], self.time, self.h)
+                self.velocity[i], position = self.RK4_SingleStep_SecondOrder(self.acceleration, self.velocity[i-1], self.trajectory[i-1], self.time, self.h)
+            elif self.integrator == "Euler-SecondOrder":
+                self.velocity[i], position = self.Euler_SingleStep_SecondOrder(self.acceleration, self.velocity[i-1], self.trajectory[i-1], self.time, self.h)
             elif self.integrator == "RK4-Euler":
                 self.velocity[i] = self.RK4_SingleStep(self.acceleration, self.velocity[i-1], self.time, self.h)
                 position = self.Euler_SingleStep(self.velocity[i], self.trajectory[i-1], self.h)
             else:
+                # Utiliser RK4 en fallback
                 position, self.velocity[i] = self.RK4_SingleStep_SecondOrder(self.acceleration, self.velocity[i-1], self.trajectory[i-1], self.time, self.h)
             if position[2] < 0:
                 self.velocity[i] = np.array([0, 0, 0])
@@ -177,88 +185,6 @@ class SimulationEuler:
 
         return self.trajectory, self.euler_angles
 
-
-class SimulationQuaternion:
-    def __init__(self, rocket: Rocket, simulation_duration: float = 200, fps: int = 60):
-        self.rocket = rocket # Une instance de l'objet rocket
-        self.simulation_duration = simulation_duration
-        self.h = 1 / fps # Calcul du pas d'intégration
-        self.simulation_steps = ceil(simulation_duration / self.h) # Nombre de points de la simulation
-        self.time = 0
-        self.time_index = 0
-
-        self.trajectory = np.zeros((self.simulation_steps, 3), dtype=np.float64)
-        self.velocity = np.zeros((self.simulation_steps, 3), dtype=np.float64)
-        self.q = np.zeros(self.simulation_steps, dtype=np.quaternion)
-
-        theta = self.rocket.gisement * np.pi / 180
-        phi = (90 - self.rocket.site) * np.pi / 180
-        self.q[0] = quat.from_euler_angles([theta, phi, 0])
-        self.wi = np.array([0.0, 0.0, 0.0])
-
-    def RK4_SingleStep(self, accel, velocity, t, h):
-        f1 = accel(t, velocity)
-        f2 = accel(t + h / 2, velocity + f1 * h / 2)
-        f3 = accel(t + h / 2, velocity + f2 * h / 2)
-        f4 = accel(t + h, velocity + f3 * h)
-        final_velocity = velocity + (f1 + 2 * f2 + 2 * f3 + f4) * (h / 6)
-        return final_velocity
-
-    def Euler_SingleStep(self, velocity, position, h):
-        final_position = position + velocity * h
-        return final_position
-
-    def acceleration(self, t, velocity):
-        euler_angles = quat.as_euler_angles(self.q[self.time_index - 1])
-        theta = euler_angles[0]
-        phi = euler_angles[1]
-        # Poussée propulseur
-        thrust_z = self.rocket.Thrust(t) * np.cos(phi)
-        thrust_xy = self.rocket.Thrust(t) * np.sin(phi)
-        thrust_y = thrust_xy * np.cos(theta)
-        thrust_x = thrust_xy * np.sin(theta)
-
-        thrust = np.array([thrust_x, thrust_y, thrust_z])
-
-        # Résistance de l'air
-        resistance = -0.5 * rho * self.rocket.S * self.rocket.Cx * np.square(velocity)
-
-        # Poids
-        # weight = np.array([0, 0, -self.rocket.m * g])
-        weight = np.array([0, 0, -self.rocket.Mass(t) * g])
-
-        # Résultante des forces
-        forces = thrust + resistance + weight
-        # accel = forces / self.rocket.m
-        accel = forces / self.rocket.Mass(t)
-        return accel
-
-    def update_rotation(self, eq, qi, wi, h):
-        w = self.RK4_SingleStep(eq, wi, 0, h)
-        wx=w[0]; wy=w[1]; wz=w[2]
-        OMEGA=np.array([[0,-wx,-wy,-wz],[wx,0,wz,-wy],[wy,-wz,0,wx],[wz,wy,-wx,0]])
-        qi = quat.as_float_array(qi)
-        q_dot = 0.5 * np.matmul(OMEGA, qi)
-        q = self.Euler_SingleStep(q_dot, qi, h)
-        return q, w
-
-    def self_acceleration(self, t, velocity):
-        return np.array([0.0, 0.0, 0.0])
-
-    def run_simulation(self):
-        # Loop principal
-        for i in range(1, self.simulation_steps):
-            self.time_index = i
-            self.velocity[i] = self.RK4_SingleStep(self.acceleration, self.velocity[i-1], self.time, self.h)
-            position = self.Euler_SingleStep(self.velocity[i], self.trajectory[i-1], self.h)
-            if position[2] < 0:
-                self.velocity[i] = np.array([0, 0, 0])
-                self.trajectory[i] = np.array([self.trajectory[i-1][0], self.trajectory[i-1][1], 0])
-            else:
-                self.trajectory[i] = position
-                self.q[i], self.wi = self.update_rotation(self.self_acceleration, self.q[i-1], self.wi, self.h)
-            self.time += self.h
-        return self.trajectory, self.q
 
 
 class DataAnalysis:
@@ -302,9 +228,6 @@ class DataAnalysis:
         if isinstance(self.simulation, SimulationEuler):
             export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), theta (rad), phi (rad), psi (rad) \n"
             rot = [np.array([i[2], i[1], i[0]]) for i in self.simulation.euler_angles]
-        elif isinstance(self.simulation, SimulationQuaternion):
-            export += "# timestamp (ms), traj_x (m), traj_y (m), traj_z (m), q1, q2, q3, q4 \n"
-            rot = [quat.as_float_array(qi) for qi in self.simulation.q]
         else:
             rot = []
 

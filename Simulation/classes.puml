@@ -36,7 +36,6 @@ class "Rocket" as simulation.Rocket {
 }
 class "SimulationEuler" as simulation.SimulationEuler {
   euler_angles : ndarray
-  fps : int
   h : float
   integrator : str
   phi
@@ -49,33 +48,15 @@ class "SimulationEuler" as simulation.SimulationEuler {
   trajectory : ndarray
   velocity : ndarray
   Euler_SingleStep(velocity, position, h)
+  Euler_SingleStep_SecondOrder(accel, velocity, position, t, h)
   RK4_SingleStep(accel, velocity, t, h)
   RK4_SingleStep_SecondOrder(accel, velocity, position, t, h)
   acceleration(t, velocity)
   run_simulation()
   updateRotation(i, theta, phi)
 }
-class "SimulationQuaternion" as simulation.SimulationQuaternion {
-  fps : int
-  h : float
-  q : ndarray
-  rocket
-  simulation_duration : float
-  simulation_steps
-  time : int
-  time_index : int
-  trajectory : ndarray
-  velocity : ndarray
-  wi : ndarray
-  Euler_SingleStep(velocity, position, h)
-  RK4_SingleStep(accel, velocity, t, h)
-  acceleration(t, velocity)
-  run_simulation()
-  self_acceleration(t, velocity)
-  update_rotation(eq, qi, wi, h)
-}
 simulation.Aerodynamics --o simulation.Rocket : aerodynamics
 simulation.Motor --o simulation.Rocket : motor
 simulation.Rocket --o simulation.SimulationEuler : rocket
-simulation.Rocket --o simulation.SimulationQuaternion : rocket
+simulation.SimulationEuler --o simulation.DataAnalysis : simulation
 @enduml

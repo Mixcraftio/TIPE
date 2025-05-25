@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 
 
 
-par=[]; res=[]; param="Cx"
-# for h in [0.001 + 0.001 * i for i in range(1000)]:
+par=[]; res=[]; param="h"
+for h in [0.0001 + 0.0001 * i for i in range(100)]:
 # for Cx in [0.5 + 0.05 * i for i in range(8)]:
 # for elevation in [75 + 1 * i for i in range(10)]:
-for v in [True]:
+# for v in [True]:
     # Definition et creation de rocket
     # Hellfire
     motor = sim.Motor(motor_name="Pro54-5G WT")
@@ -26,8 +26,7 @@ for v in [True]:
     # rocket = sim.Rocket(rocket_mass=1.500, motor=motor, aerodynamics=aero, open_para=8)
 
     # Creation de l'objet simulation
-    simulation = sim.SimulationEuler(rocket, integrator="RK4-SecondOrder", simulation_duration=200) # Fusex
-    # sim = SimulationQuaternion(rocket, simulation_duration=30) # Minif
+    simulation = sim.SimulationEuler(rocket, integrator="RK4-SecondOrder", simulation_duration=200, h=h)
 
     # Execution de la simulation
     simulation.run_simulation()
@@ -35,16 +34,16 @@ for v in [True]:
     # Analyse des resultats
     analysis = sim.DataAnalysis(simulation)
     apogee, vnorm, vmean = analysis.simulation_report()
-    analysis.graph_trajectory()
+    # analysis.graph_trajectory()
     # analysis.export_trajectory()
 
-    # par.append(h)
+    par.append(h)
     # par.append(Cx)
     # par.append(elevation)
-    # res.append(apogee)
+    res.append(apogee)
 
-# plt.title(f"apogee=f({param})")
-# plt.xlabel(param)
-# plt.ylabel("apogee (m)")
-# plt.plot(par, res, ".-", label="apogée")
-# plt.show()
+plt.title(f"apogee=f({param})")
+plt.xlabel(param)
+plt.ylabel("apogee (m)")
+plt.plot(par, res, ".-", label="apogée")
+plt.show()
