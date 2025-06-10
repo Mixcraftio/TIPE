@@ -206,7 +206,7 @@ class DataAnalysis:
     def graph_trajectory(self, filename="./OUT/Trajectory.svg"):
         """Trace, sauvegarde et montre le graphe de la trajectoire de la fusée."""
         fig = plt.figure()
-        fig.suptitle("Trajectory Simulation")
+        fig.suptitle("Trajectoire simulée")
         ax = fig.add_subplot(projection='3d')
 
         x, y, z = self.simulation.trajectory.T

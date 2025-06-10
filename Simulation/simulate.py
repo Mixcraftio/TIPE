@@ -3,11 +3,12 @@
 
 import simulation as sim
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 
 par=[]; res=[]; param="h"
-for h in [0.0001 + 0.0001 * i for i in range(100)]:
+for h in [0.001 + 0.001 * i for i in range(100)]:
+# for h in [0.0001 + 0.0001 * i for i in range(100)]:
 # for Cx in [0.5 + 0.05 * i for i in range(8)]:
 # for elevation in [75 + 1 * i for i in range(10)]:
 # for v in [True]:
@@ -40,10 +41,20 @@ for h in [0.0001 + 0.0001 * i for i in range(100)]:
     par.append(h)
     # par.append(Cx)
     # par.append(elevation)
-    res.append(apogee)
+    # res.append(apogee)
+    apog_index = np.argmax(simulation.trajectory.T[2])
+    apog_time = apog_index * 0.01
+    res.append(apog_time)
 
-plt.title(f"apogee=f({param})")
+
+# plt.title(f"apogee=f({param})")
+# plt.xlabel(param)
+# plt.ylabel("apogee (m)")
+# plt.plot(par, res, ".-", label="apogée")
+# plt.show()
+
+plt.title(f"temps à l'apogee = f({param})")
 plt.xlabel(param)
-plt.ylabel("apogee (m)")
-plt.plot(par, res, ".-", label="apogée")
+plt.ylabel("temps (s)")
+plt.plot(par, res, ".-", label="temps")
 plt.show()

@@ -1,0 +1,31 @@
+@startuml classes
+set namespaceSeparator none
+class "Aerodynamics" as simulation.Aerodynamics {
+}
+class "DataAnalysis" as simulation.DataAnalysis {
+  export_trajectory(filename)
+  graph_trajectory(filename)
+  simulation_report()
+}
+class "Motor" as simulation.Motor {
+  get_propellant_mass(t: float) -> float
+  get_thrust(t: float) -> float
+}
+class "Rocket" as simulation.Rocket {
+  Mass(t: float) -> float
+  Thrust(t: float) -> float
+}
+class "SimulationEuler" as simulation.SimulationEuler {
+  Euler_SingleStep(velocity, position, h)
+  Euler_SingleStep_SecondOrder(accel, velocity, position, t, h)
+  RK4_SingleStep(accel, velocity, t, h)
+  RK4_SingleStep_SecondOrder(accel, velocity, position, t, h)
+  acceleration(t, velocity)
+  run_simulation()
+  updateRotation(i, theta, phi)
+}
+simulation.Aerodynamics --o simulation.Rocket : aerodynamics
+simulation.Motor --o simulation.Rocket : motor
+simulation.Rocket --o simulation.SimulationEuler : rocket
+simulation.SimulationEuler --o simulation.DataAnalysis : simulation
+@enduml
